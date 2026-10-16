@@ -30,5 +30,7 @@ export const site = {
 
 export const iconUrl = (icon: string, color = "8b3a2a") => {
 	const path = icon.replace(":", "/");
-	return `https://api.iconify.design/${path}.svg?color=%23${color}`;
+	const base = `https://api.iconify.design/${path}.svg`;
+	if (!color) return base;
+	return `${base}?color=%23${color}`;
 };

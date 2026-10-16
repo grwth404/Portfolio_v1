@@ -5,7 +5,7 @@ export type SkillCategory = {
 
 export type Skill = {
 	name: string;
-	abbr: string;
+	icon: string;
 	category: string;
 	since: number;
 };
