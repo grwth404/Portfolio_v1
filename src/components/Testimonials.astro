@@ -2,9 +2,9 @@
 import { testimonials } from "../data/testimonials";
 import { sections } from "../data/sections";
 import SectionHeader from "./ui/SectionHeader.astro";
-import CornerBrackets from "./ui/CornerBrackets.astro";
 
 const { testimonials: section } = sections;
+const total = testimonials.length;
 ---
 
 <section id="testimonials" class="mt-24">
@@ -15,114 +15,121 @@ const { testimonials: section } = sections;
 		revealClass="testimonials-reveal"
 	/>
 
-	<div class="testimonials-reveal relative mt-12" style="--d: 100ms">
-		<div class="overflow-hidden" id="testimonial-viewport">
-			<div
-				id="testimonial-track"
-				class="flex gap-4 transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform"
-				data-count={testimonials.length}
-			>
-				{
-					testimonials.map((item, index) => (
-						<article class="testimonial-slide shrink-0" data-index={index}>
-							<div class="testimonial-card group relative h-full rounded-xl border border-text/10 bg-text/2 p-6 sm:p-7 transition-all duration-500 hover:border-accent/35 hover:bg-accent/4 hover:-translate-y-1 hover:shadow-accent-lift">
-								<CornerBrackets />
+	<div
+		class="testimonials-reveal testimonials-panel relative mt-12 overflow-visible border border-text/15 bg-bg"
+		style="--d: 100ms"
+	>
+		<span
+			class="pointer-events-none absolute -top-px -left-px z-20 h-5 w-5 border-t-2 border-l-2 border-accent-bright"
+			aria-hidden="true"></span>
+		<span
+			class="pointer-events-none absolute -top-px -right-px z-20 h-5 w-5 border-t-2 border-r-2 border-accent-bright"
+			aria-hidden="true"></span>
+		<span
+			class="pointer-events-none absolute -bottom-px -left-px z-20 h-5 w-5 border-b-2 border-l-2 border-accent-bright"
+			aria-hidden="true"></span>
+		<span
+			class="pointer-events-none absolute -right-px -bottom-px z-20 h-5 w-5 border-b-2 border-r-2 border-accent-bright"
+			aria-hidden="true"></span>
 
-								<div class="flex items-start justify-between gap-4 mb-5">
-									<div
-										class="flex gap-0.5"
-										aria-label={`${item.rating} out of 5 stars`}
-									>
-										{Array.from({ length: item.rating }).map(() => (
-											<svg
-												class="h-3.5 w-3.5 text-accent"
-												viewBox="0 0 24 24"
-												fill="currentColor"
-												aria-hidden="true"
-											>
-												<path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" />
-											</svg>
-										))}
-									</div>
-									<span
-										class="font-serif text-5xl leading-none text-accent/15 select-none"
-										aria-hidden="true"
-									>
-										"
-									</span>
-								</div>
-
-								<p class="text-[0.65rem] sm:text-xs text-text/90 uppercase tracking-wide leading-relaxed text-center min-h-[7.5rem] sm:min-h-[6.5rem]">
-									"{item.quote}"
-								</p>
-
-								<div class="my-5 h-px bg-text/10" />
-
-								<div class="flex items-center gap-3">
-									<img
-										src={item.avatar}
-										alt={item.name}
-										width="40"
-										height="40"
-										class="h-10 w-10 rounded-full border border-accent/30 object-cover"
-										loading="lazy"
-									/>
-									<div class="min-w-0 text-left">
-										<p class="font-sans font-medium text-xs uppercase tracking-wider text-text truncate">
-											{item.name}
-										</p>
-										<p class="text-[0.55rem] uppercase tracking-wider text-text/60 truncate">
-											{item.role}
-										</p>
-									</div>
-								</div>
-							</div>
-						</article>
-					))
-				}
+		<div class="relative border-b border-text/10 px-4 py-3 sm:px-5">
+			<div class="flex items-center justify-between gap-3">
+				<div class="flex items-center gap-2.5">
+					<span class="h-2 w-2 shrink-0 bg-accent-bright" aria-hidden="true"
+					></span>
+					<span class="font-mono text-sm tracking-tight text-text"
+						>testimonials.db</span
+					>
+				</div>
+				<p class="text-right text-[0.7rem] tabular-nums tracking-wide text-text/70">
+					{total} / {total} shown
+				</p>
 			</div>
 		</div>
 
-		<div class="mt-8 flex items-center justify-center gap-4">
-			<button
-				type="button"
-				id="testimonial-prev"
-				class="testimonial-nav flex h-10 w-10 items-center justify-center rounded-full border border-text/15 text-text/70 transition-all duration-300 hover:border-accent/40 hover:text-text hover:bg-accent/10 disabled:opacity-30 disabled:pointer-events-none"
-				aria-label="Previous testimonials"
-			>
-				<svg
-					class="h-4 w-4"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="1.5"
+		<div class="testimonials-stage px-4 py-5 sm:px-5">
+			<div class="overflow-hidden" id="testimonial-viewport">
+				<div
+					id="testimonial-track"
+					class="flex gap-4 transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform"
+					data-count={total}
 				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						d="M15 19l-7-7 7-7"></path>
-				</svg>
-			</button>
+					{
+						testimonials.map((item, index) => (
+							<article class="testimonial-slide shrink-0" data-index={index}>
+								<div class="testimonial-card">
+									<div class="testimonial-meta">
+										<span class="testimonial-index">
+											{String(index + 1).padStart(2, "0")}
+										</span>
+										<div
+											class="testimonial-stars"
+											role="img"
+											aria-label={`${item.rating} out of 5 stars`}
+										>
+											{Array.from({ length: item.rating }).map(() => (
+												<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+													<path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" />
+												</svg>
+											))}
+										</div>
+									</div>
 
-			<div id="testimonial-dots" class="flex items-center gap-2"></div>
+									<blockquote class="testimonial-quote">"{item.quote}"</blockquote>
 
-			<button
-				type="button"
-				id="testimonial-next"
-				class="testimonial-nav flex h-10 w-10 items-center justify-center rounded-full border border-text/15 text-text/70 transition-all duration-300 hover:border-accent/40 hover:text-text hover:bg-accent/10 disabled:opacity-30 disabled:pointer-events-none"
-				aria-label="Next testimonials"
-			>
-				<svg
-					class="h-4 w-4"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="1.5"
+									<div class="testimonial-person">
+										<img
+											src={item.avatar}
+											alt=""
+											width="40"
+											height="40"
+											class="testimonial-avatar"
+											loading="lazy"
+										/>
+										<div class="min-w-0">
+											<p class="testimonial-name">{item.name}</p>
+											<p class="testimonial-role">{item.role}</p>
+										</div>
+									</div>
+								</div>
+							</article>
+						))
+					}
+				</div>
+			</div>
+		</div>
+
+		<div
+			class="flex flex-wrap items-center justify-between gap-3 border-t border-text/10 px-4 py-3.5 sm:px-5"
+		>
+			<p id="testimonial-range" class="testimonial-range" aria-live="polite">
+				Showing 1–{Math.min(3, total)} of {total}
+			</p>
+			<div class="flex items-center gap-2">
+				<button
+					type="button"
+					id="testimonial-prev"
+					class="testimonial-nav"
+					aria-label="Previous testimonials"
 				>
-					<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"
-					></path>
-				</svg>
-			</button>
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"
+						></path>
+					</svg>
+				</button>
+				<div id="testimonial-dots" class="flex items-center gap-1.5"></div>
+				<button
+					type="button"
+					id="testimonial-next"
+					class="testimonial-nav"
+					aria-label="Next testimonials"
+				>
+					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"
+						></path>
+					</svg>
+				</button>
+			</div>
 		</div>
 	</div>
 </section>
@@ -138,6 +145,7 @@ const { testimonials: section } = sections;
 		const prevBtn = document.getElementById("testimonial-prev");
 		const nextBtn = document.getElementById("testimonial-next");
 		const dotsEl = document.getElementById("testimonial-dots");
+		const rangeEl = document.getElementById("testimonial-range");
 
 		if (
 			!section ||
@@ -171,8 +179,7 @@ const { testimonials: section } = sections;
 			for (let i = 0; i <= maxIndex; i++) {
 				const dot = document.createElement("button");
 				dot.type = "button";
-				dot.className =
-					"testimonial-dot h-1.5 rounded-full transition-all duration-300";
+				dot.className = "testimonial-dot";
 				dot.setAttribute("aria-label", `Go to slide ${i + 1}`);
 				dot.addEventListener("click", () => goTo(i));
 				dotsEl.appendChild(dot);
@@ -183,12 +190,15 @@ const { testimonials: section } = sections;
 			dotsEl
 				.querySelectorAll<HTMLButtonElement>(".testimonial-dot")
 				.forEach((dot, i) => {
-					const active = i === current;
-					dot.classList.toggle("w-6", active);
-					dot.classList.toggle("w-1.5", !active);
-					dot.classList.toggle("bg-accent", active);
-					dot.classList.toggle("bg-text/20", !active);
+					dot.classList.toggle("is-active", i === current);
 				});
+		};
+
+		const updateRange = () => {
+			if (!rangeEl || total === 0) return;
+			const from = current + 1;
+			const to = Math.min(current + perView, total);
+			rangeEl.textContent = `Showing ${from}–${to} of ${total}`;
 		};
 
 		const layout = () => {
@@ -197,7 +207,9 @@ const { testimonials: section } = sections;
 			if (current > maxIndex) current = maxIndex;
 
 			const viewportW = viewport.clientWidth;
-			const slideWidth = (viewportW - GAP * (perView - 1)) / perView;
+			const slideWidth = Math.floor(
+				(viewportW - GAP * (perView - 1)) / perView,
+			);
 			slides.forEach((slide) => {
 				slide.style.width = `${slideWidth}px`;
 			});
@@ -211,7 +223,9 @@ const { testimonials: section } = sections;
 
 		const applyTransform = (animate = true) => {
 			const viewportW = viewport.clientWidth;
-			const slideWidth = (viewportW - GAP * (perView - 1)) / perView;
+			const slideWidth = Math.floor(
+				(viewportW - GAP * (perView - 1)) / perView,
+			);
 			const offset = current * (slideWidth + GAP);
 			track.style.transitionDuration = animate ? "700ms" : "0ms";
 			track.style.transform = `translateX(-${offset}px)`;
@@ -238,6 +252,7 @@ const { testimonials: section } = sections;
 			prevBtn.disabled = current === 0;
 			nextBtn.disabled = current >= maxIndex;
 			updateDots();
+			updateRange();
 		};
 
 		const goTo = (index: number) => {
@@ -265,10 +280,13 @@ const { testimonials: section } = sections;
 		nextBtn.addEventListener("click", next);
 
 		let resizeTimer = 0;
-		window.addEventListener("resize", () => {
+		const onResize = () => {
 			window.clearTimeout(resizeTimer);
-			resizeTimer = window.setTimeout(layout, 150);
-		});
+			resizeTimer = window.setTimeout(layout, 50);
+		};
+		window.addEventListener("resize", onResize);
+		const resizeObserver = new ResizeObserver(onResize);
+		resizeObserver.observe(viewport);
 
 		layout();
 		resetAutoplay();
@@ -303,3 +321,213 @@ const { testimonials: section } = sections;
 
 	onDomReady(initTestimonials);
 </script>
+
+<style>
+	.testimonials-panel,
+	.testimonial-card,
+	.testimonial-avatar,
+	.testimonial-nav,
+	.testimonial-dot {
+		border-radius: 0;
+	}
+
+	.testimonials-stage {
+		background-image: radial-gradient(
+			circle,
+			color-mix(in srgb, var(--color-text) 16%, transparent) 1px,
+			transparent 1px
+		);
+		background-size: 14px 14px;
+	}
+
+	.testimonial-slide {
+		display: flex;
+		min-width: 0;
+	}
+
+	.testimonial-card {
+		position: relative;
+		display: flex;
+		width: 100%;
+		height: 100%;
+		flex-direction: column;
+		border: 1px solid color-mix(in srgb, var(--color-text) 14%, transparent);
+		background: var(--color-bg);
+		padding: 1.05rem 1.1rem 0.95rem;
+		transition:
+			border-color 0.35s ease,
+			background-color 0.35s ease;
+	}
+
+	.testimonial-card::before {
+		content: "";
+		position: absolute;
+		top: 0;
+		left: 0;
+		z-index: 2;
+		width: 0;
+		height: 2px;
+		background: var(--color-accent-bright);
+		pointer-events: none;
+		transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	.testimonial-card:hover {
+		border-color: var(--color-accent-bright);
+		background: color-mix(in srgb, var(--color-accent-bright) 6%, var(--color-bg));
+	}
+
+	.testimonial-card:hover::before {
+		width: 100%;
+	}
+
+	.testimonial-meta {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+	}
+
+	.testimonial-index {
+		font-size: 0.72rem;
+		font-variant-numeric: tabular-nums;
+		letter-spacing: 0.16em;
+		color: var(--color-accent-bright);
+	}
+
+	.testimonial-stars {
+		display: flex;
+		gap: 0.12rem;
+	}
+
+	.testimonial-stars svg {
+		width: 0.78rem;
+		height: 0.78rem;
+		color: var(--color-accent-bright);
+	}
+
+	.testimonial-quote {
+		flex: 1;
+		margin: 0.95rem 0 0;
+		border-left: 2px solid var(--color-accent-bright);
+		padding-left: 0.8rem;
+		font-size: 0.92rem;
+		font-weight: 400;
+		line-height: 1.6;
+		color: color-mix(in srgb, var(--color-text) 88%, transparent);
+	}
+
+	.testimonial-person {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		margin-top: 1.15rem;
+		border-top: 1px solid color-mix(in srgb, var(--color-text) 10%, transparent);
+		padding-top: 0.9rem;
+	}
+
+	.testimonial-avatar {
+		width: 2.5rem;
+		height: 2.5rem;
+		flex-shrink: 0;
+		object-fit: cover;
+		border: 1px solid color-mix(in srgb, var(--color-text) 18%, transparent);
+		background: #242938;
+	}
+
+	.testimonial-card:hover .testimonial-avatar {
+		border-color: var(--color-accent-bright);
+	}
+
+	.testimonial-name {
+		overflow: hidden;
+		font-size: 0.92rem;
+		font-weight: 500;
+		line-height: 1.2;
+		letter-spacing: -0.02em;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		color: var(--color-text);
+	}
+
+	.testimonial-role {
+		overflow: hidden;
+		margin-top: 0.15rem;
+		font-size: 0.72rem;
+		line-height: 1.35;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		color: color-mix(in srgb, var(--color-text) 58%, transparent);
+	}
+
+	.testimonial-range {
+		font-size: 0.78rem;
+		color: color-mix(in srgb, var(--color-text) 55%, transparent);
+	}
+
+	.testimonial-nav {
+		display: grid;
+		width: 2rem;
+		height: 2rem;
+		place-items: center;
+		border: 1px solid color-mix(in srgb, var(--color-text) 16%, transparent);
+		background: transparent;
+		color: color-mix(in srgb, var(--color-text) 72%, transparent);
+		cursor: pointer;
+		transition:
+			border-color 0.2s ease,
+			color 0.2s ease,
+			background-color 0.2s ease;
+	}
+
+	.testimonial-nav svg {
+		width: 0.9rem;
+		height: 0.9rem;
+	}
+
+	.testimonial-nav:hover:not(:disabled) {
+		border-color: var(--color-accent-bright);
+		color: var(--color-text);
+	}
+
+	.testimonial-nav:disabled {
+		opacity: 0.35;
+		cursor: default;
+	}
+
+	.testimonial-nav:focus-visible {
+		outline: 1px solid var(--color-accent-bright);
+		outline-offset: 2px;
+	}
+
+	:global(.testimonial-dot) {
+		width: 0.4rem;
+		height: 0.4rem;
+		border: 0;
+		background: color-mix(in srgb, var(--color-text) 28%, transparent);
+		padding: 0;
+		cursor: pointer;
+		transition:
+			width 0.3s ease,
+			background-color 0.3s ease;
+	}
+
+	:global(.testimonial-dot.is-active) {
+		width: 1.35rem;
+		background: var(--color-accent-bright);
+	}
+
+	:global(.testimonial-dot:focus-visible) {
+		outline: 1px solid var(--color-accent-bright);
+		outline-offset: 2px;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.testimonial-card,
+		.testimonial-card::before,
+		.testimonial-nav,
+		:global(.testimonial-dot) {
+			transition: none;
+		}
+	}
+</style>

@@ -49,7 +49,9 @@ function bounds(job: Career) {
 
 const jobs = careers.map((job) => {
 	const { startIso, endIso, current } = bounds(job);
-	const latest = [...job.roles].sort((a, b) => b.start.localeCompare(a.start))[0];
+	const latest = [...job.roles].sort((a, b) =>
+		b.start.localeCompare(a.start),
+	)[0];
 	const months = Math.max(
 		monthsBetween(at(startIso), endIso ? at(endIso) : now),
 		0,
@@ -161,10 +163,7 @@ const mapLabel = `Career map from ${rangeStart} to ${rangeEnd}: ${chronological
 							<div class="career-meta">
 								<p class="career-period">
 									<span
-										class:list={[
-											"career-node-inline",
-											job.current && "is-now",
-										]}
+										class:list={["career-node-inline", job.current && "is-now"]}
 										aria-hidden="true"
 									/>
 									{job.periodStart}
@@ -371,7 +370,7 @@ const mapLabel = `Career map from ${rangeStart} to ${rangeEnd}: ${chronological
 				?.classList.add("is-linked");
 		});
 		map?.addEventListener("pointerout", (event) => {
-			const next = event.relatedTarget;
+			const next = (event as PointerEvent).relatedTarget;
 			if (next instanceof Node && map.contains(next)) return;
 			section
 				.querySelectorAll(".career-card.is-linked")
