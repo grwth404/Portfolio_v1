@@ -23,16 +23,24 @@ export type Project = {
 	openSource?: boolean;
 };
 
+export type CareerRole = {
+	title: string;
+	start: string;
+	end: string | null;
+};
+
 export type Career = {
 	company: string;
-	role: string;
-	period: string;
+	initials: string;
 	location: string;
+	employment: string;
+	arrangement: string;
 	summary: string;
 	highlights: string[];
+	stack: string[];
+	roles: CareerRole[];
 	website: string;
-	intro: string;
-	logoIcon: string;
+	photo: string;
 };
 
 export type Testimonial = {
