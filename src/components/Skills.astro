@@ -1,0 +1,443 @@
+---
+import { skillCategories, skills } from "../data/skills";
+import { sections } from "../data/sections";
+import SectionHeader from "./ui/SectionHeader.astro";
+
+const { skills: section } = sections;
+const rangeStart = 2017;
+const rangeEnd = new Date().getFullYear();
+const span = Math.max(rangeEnd - rangeStart, 1);
+const total = skills.length;
+const ticks = [2017, 2020, 2023, rangeEnd];
+
+const categoryLabel = new Map(
+	skillCategories.map((category) => [category.id, category.label]),
+);
+
+const counts = new Map(skillCategories.map((category) => [category.id, 0]));
+for (const skill of skills) {
+	counts.set(skill.category, (counts.get(skill.category) ?? 0) + 1);
+}
+
+function bar(since: number) {
+	const start = Math.min(Math.max(since, rangeStart), rangeEnd);
+	const left = ((start - rangeStart) / span) * 100;
+	const width = ((rangeEnd - start) / span) * 100;
+	const years = Math.max(rangeEnd - since, 0);
+	return { left, width, years };
+}
+
+function yearsLabel(years: number) {
+	return `${years} ${years === 1 ? "yr" : "yrs"}`;
+}
+
+const axisYears = Array.from(
+	{ length: rangeEnd - rangeStart },
+	(_, index) => rangeStart + index,
+);
+
+function axisColor(year: number) {
+	const steps = Math.max(rangeEnd - 1 - 2017, 1);
+	const t = year < 2017 ? 0 : (year - 2017) / steps;
+	const alpha = year < 2017 ? 0.28 : 0.38 + t * 0.62;
+	return `color-mix(in srgb, var(--color-accent-bright) ${Math.round(alpha * 100)}%, transparent)`;
+}
+---
+
+<section id="skills" class="mt-24">
+	<SectionHeader
+		eyebrow={section.eyebrow}
+		title={section.title}
+		description={section.description}
+		revealClass="skills-reveal"
+	/>
+
+	<div
+		class="skills-reveal skills-panel relative mt-12 overflow-visible border border-text/15 bg-bg"
+		style="--d: 100ms"
+	>
+		<span
+			class="pointer-events-none absolute -top-px -left-px z-20 h-5 w-5 border-t-2 border-l-2 border-accent"
+			aria-hidden="true"></span>
+		<span
+			class="pointer-events-none absolute -top-px -right-px z-20 h-5 w-5 border-t-2 border-r-2 border-accent"
+			aria-hidden="true"></span>
+		<span
+			class="pointer-events-none absolute -bottom-px -left-px z-20 h-5 w-5 border-b-2 border-l-2 border-accent"
+			aria-hidden="true"></span>
+		<span
+			class="pointer-events-none absolute -right-px -bottom-px z-20 h-5 w-5 border-b-2 border-r-2 border-accent"
+			aria-hidden="true"></span>
+
+		<div class="relative border-b border-text/10 px-4 py-3 sm:px-5">
+			<div class="flex items-center justify-between gap-3">
+				<div class="flex items-center gap-2.5">
+					<span class="h-2 w-2 shrink-0 bg-accent-bright" aria-hidden="true"
+					></span>
+					<span class="font-mono text-sm tracking-tight text-text"
+						>skills.db</span
+					>
+				</div>
+
+				<p
+					id="skills-count"
+					class="text-right text-[0.7rem] tabular-nums tracking-wide text-text/70"
+					aria-live="polite"
+				>
+					{total} / {total} shown
+				</p>
+			</div>
+
+			<label
+				class="relative mt-3 block w-full sm:absolute sm:top-1/2 sm:left-1/2 sm:z-10 sm:mt-0 sm:w-[min(48rem,calc(100%-18rem))] sm:-translate-x-1/2 sm:-translate-y-1/2"
+			>
+				<svg
+					class="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-text/70"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					aria-hidden="true"
+				>
+					<circle cx="11" cy="11" r="7"></circle>
+					<path d="M20 20l-3.5-3.5" stroke-linecap="round"></path>
+				</svg>
+				<input
+					id="skills-query"
+					type="search"
+					placeholder="Filter technologies..."
+					autocomplete="off"
+					spellcheck="false"
+					aria-label="Filter technologies"
+					class="h-9 w-full appearance-none border border-text/15 bg-text/3 pr-3 pl-9 text-sm text-text outline-none placeholder:text-text/50 focus:border-accent-bright/70"
+				/>
+			</label>
+		</div>
+
+		<div
+			class="flex flex-wrap gap-1.5 border-b border-text/10 px-4 py-3 sm:px-5"
+			role="toolbar"
+			aria-label="Filter by category"
+		>
+			<button
+				type="button"
+				class="skill-chip is-active"
+				data-skill-category="all"
+				aria-pressed="true"
+			>
+				<span class="uppercase tracking-wide">All</span>
+				<span class="skill-chip-count">{total}</span>
+			</button>
+			{
+				skillCategories.map((category) => (
+					<button
+						type="button"
+						class="skill-chip"
+						data-skill-category={category.id}
+						aria-pressed="false"
+					>
+						<span>{category.label}</span>
+						<span class="skill-chip-count">{counts.get(category.id) ?? 0}</span>
+					</button>
+				))
+			}
+		</div>
+
+		<div
+			id="skills-scroll"
+			class="skills-scroll h-[32rem] overflow-y-auto px-4 py-3 sm:px-5"
+		>
+			<div
+				id="skills-grid"
+				class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3"
+			>
+				{
+					skills.map((skill) => {
+						const { left, width, years } = bar(skill.since);
+						const label = categoryLabel.get(skill.category) ?? skill.category;
+						return (
+							<article
+								class="skill-card flex items-start gap-3 border border-text/10 px-3 py-3"
+								data-category={skill.category}
+								data-name={skill.name.toLowerCase()}
+								data-label={label.toLowerCase()}
+							>
+								<span
+									class="skill-abbr grid h-12 w-12 shrink-0 place-items-center bg-text text-[0.8rem] font-semibold tracking-wide text-bg"
+									aria-hidden="true"
+								>
+									{skill.abbr}
+								</span>
+								<div class="min-w-0 flex-1 pt-0.5">
+									<div class="flex items-start justify-between gap-2">
+										<h3 class="truncate text-[0.92rem] font-medium leading-tight tracking-tight text-text">
+											{skill.name}
+										</h3>
+										<span class="shrink-0 pt-0.5 text-[0.58rem] font-medium uppercase tracking-[0.14em] text-accent-bright">
+											{label}
+										</span>
+									</div>
+									<div class="relative mt-3 h-2">
+										<div class="absolute inset-x-0 top-1/2 h-[3px] -translate-y-1/2 bg-text/12" />
+										<div
+											class="absolute top-0 h-full"
+											style={`left:${left}%;width:${width}%`}
+										>
+											<div class="skill-fill absolute top-1/2 left-0 h-[3px] w-full -translate-y-1/2 bg-accent-bright" />
+											<span class="absolute top-1/2 right-0 h-[7px] w-[7px] -translate-y-1/2 bg-text" />
+										</div>
+									</div>
+									<div class="mt-1.5 flex items-center justify-between text-[0.68rem] tabular-nums text-text/60">
+										<span>Since {skill.since}</span>
+										<span>{yearsLabel(years)}</span>
+									</div>
+								</div>
+							</article>
+						);
+					})
+				}
+			</div>
+			<p
+				id="skills-empty"
+				class="hidden py-16 text-center text-sm text-text/60"
+			>
+				No technologies match that filter.
+			</p>
+		</div>
+
+		<div class="skills-axis border-t border-text/10 px-4 pt-3.5 pb-4 sm:px-5">
+			<div class="flex h-[3px] gap-1">
+				{
+					axisYears.map((year) => (
+						<div
+							class="h-full min-w-0 flex-1"
+							style={`background-color:${axisColor(year)}`}
+						/>
+					))
+				}
+			</div>
+			<div class="relative mt-2.5 h-4">
+				{
+					ticks.map((year, index) => (
+						<span
+							class:list={[
+								"absolute top-0 text-[0.68rem] tabular-nums text-text/70",
+								index === 0 && "left-0",
+								index === ticks.length - 1 && "right-0",
+								index > 0 && index < ticks.length - 1 && "-translate-x-1/2",
+							]}
+							style={
+								index > 0 && index < ticks.length - 1
+									? `left:${((year - rangeStart) / span) * 100}%`
+									: undefined
+							}
+						>
+							{year}
+						</span>
+					))
+				}
+			</div>
+		</div>
+	</div>
+</section>
+
+<script>
+	import { onDomReady } from "../lib/dom";
+	import { observeSectionReveal } from "../lib/reveal";
+
+	function initSkills() {
+		const section = document.getElementById("skills");
+		const query = document.getElementById("skills-query");
+		const count = document.getElementById("skills-count");
+		const empty = document.getElementById("skills-empty");
+		const scroll = document.getElementById("skills-scroll");
+		if (
+			!section ||
+			!(query instanceof HTMLInputElement) ||
+			!count ||
+			!empty ||
+			!scroll
+		) {
+			return;
+		}
+
+		const search = query;
+		const countEl = count;
+		const emptyEl = empty;
+		const scrollEl = scroll;
+		const cards = Array.from(
+			section.querySelectorAll<HTMLElement>(".skill-card"),
+		);
+		const chips = Array.from(
+			section.querySelectorAll<HTMLButtonElement>(".skill-chip"),
+		);
+		let category = "all";
+
+		function apply() {
+			const term = search.value.trim().toLowerCase();
+			let shown = 0;
+
+			for (const card of cards) {
+				const matchesCategory =
+					category === "all" || card.dataset.category === category;
+				const haystack = `${card.dataset.name ?? ""} ${card.dataset.label ?? ""}`;
+				const matchesQuery = term.length === 0 || haystack.includes(term);
+				const visible = matchesCategory && matchesQuery;
+				card.hidden = !visible;
+				if (visible) shown += 1;
+			}
+
+			countEl.textContent = `${shown} / ${cards.length} shown`;
+			emptyEl.classList.toggle("hidden", shown > 0);
+			scrollEl.scrollTop = 0;
+		}
+
+		for (const chip of chips) {
+			chip.addEventListener("click", () => {
+				category = chip.dataset.skillCategory ?? "all";
+				for (const other of chips) {
+					const active = other === chip;
+					other.classList.toggle("is-active", active);
+					other.setAttribute("aria-pressed", active ? "true" : "false");
+				}
+				apply();
+			});
+		}
+
+		search.addEventListener("input", apply);
+
+		observeSectionReveal("skills", ".skills-reveal", { threshold: 0.08 });
+	}
+
+	onDomReady(initSkills);
+</script>
+
+<style>
+	.skills-scroll {
+		background-image: radial-gradient(circle, #2c2c31, 1px, transparent 1px);
+		background-size: 14px 14px;
+	}
+
+	.skills-scroll {
+		scrollbar-width: thin;
+		scrollbar-color: var(--color-accent-bright) transparent;
+	}
+
+	.skills-scroll::-webkit-scrollbar {
+		width: 8px;
+	}
+
+	.skills-scroll::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	.skills-scroll::-webkit-scrollbar-thumb {
+		background: var(--color-accent-bright);
+		border-radius: 999px;
+	}
+
+	.skill-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		border-radius: 0;
+		border: 1px solid color-mix(in srgb, var(--color-text) 15%, transparent);
+		background: transparent;
+		padding: 0.3rem 0.6rem;
+		font-size: 0.72rem;
+		line-height: 1.2;
+		color: color-mix(in srgb, var(--color-text) 62%, transparent);
+		cursor: pointer;
+		transition:
+			border-color 0.2s ease,
+			color 0.2s ease,
+			background-color 0.2s ease;
+	}
+
+	.skill-chip:hover {
+		border-color: color-mix(in srgb, var(--color-text) 32%, transparent);
+		color: var(--color-text);
+	}
+
+	.skill-chip.is-active {
+		border-color: var(--color-accent-bright);
+		background: color-mix(in srgb, var(--color-accent-bright) 12%, transparent);
+		color: var(--color-text);
+	}
+
+	.skill-chip-count {
+		opacity: 0.6;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.skill-card {
+		background-color: var(--color-bg);
+		transition:
+			transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+			border-color 0.35s ease,
+			box-shadow 0.35s ease;
+	}
+
+	.skill-card .skill-abbr,
+	.skill-fill {
+		transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	.skill-fill {
+		overflow: hidden;
+	}
+
+	.skill-fill::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(
+			90deg,
+			transparent,
+			rgb(255 255 255 / 0.7),
+			transparent
+		);
+		transform: translateX(-130%);
+	}
+
+	.skill-card:hover {
+		transform: translateY(-4px);
+		border-color: var(--color-accent-bright);
+		background-color: var(--color-bg);
+		box-shadow: 0 14px 32px rgb(193 80 47 / 0.18);
+	}
+
+	.skill-card:hover .skill-abbr {
+		transform: scale(1.08);
+	}
+
+	.skill-card:hover .skill-fill::after {
+		animation: skill-sheen 0.7s ease;
+	}
+
+	@keyframes skill-sheen {
+		to {
+			transform: translateX(130%);
+		}
+	}
+
+	.skill-card[hidden] {
+		display: none;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.skill-card,
+		.skill-card .skill-abbr,
+		.skill-fill {
+			transition: none;
+		}
+
+		.skill-card:hover {
+			transform: none;
+		}
+
+		.skill-card:hover .skill-fill::after {
+			animation: none;
+		}
+	}
+</style>

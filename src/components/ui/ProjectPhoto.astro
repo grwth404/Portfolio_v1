@@ -1,0 +1,23 @@
+---
+interface Props {
+	src?: string;
+	initials: string;
+}
+
+const { src, initials } = Astro.props;
+---
+
+<div class:list={["project-visual", src && "has-photo"]}>
+	{
+		src && (
+			<img
+				class="project-photo"
+				src={src}
+				alt=""
+				loading="lazy"
+				decoding="async"
+			/>
+		)
+	}
+	<span class="project-mark" aria-hidden="true">{initials}</span>
+</div>

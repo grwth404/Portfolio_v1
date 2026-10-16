@@ -1,0 +1,45 @@
+---
+interface Props {
+	size?: "sm" | "md";
+	opacityClass?: string;
+	class?: string;
+}
+
+const {
+	size = "sm",
+	opacityClass = "border-accent/50",
+	class: className,
+} = Astro.props;
+const dim = size === "sm" ? "h-3 w-3" : "h-4 w-4";
+const border = opacityClass;
+---
+
+<span
+	class:list={[
+		"absolute top-3 left-3 border-t border-l pointer-events-none",
+		dim,
+		border,
+		className,
+	]}
+></span>
+<span
+	class:list={[
+		"absolute top-3 right-3 border-t border-r pointer-events-none",
+		dim,
+		border,
+	]}
+></span>
+<span
+	class:list={[
+		"absolute bottom-3 left-3 border-b border-l pointer-events-none",
+		dim,
+		border,
+	]}
+></span>
+<span
+	class:list={[
+		"absolute bottom-3 right-3 border-b border-r pointer-events-none",
+		dim,
+		border,
+	]}
+></span>

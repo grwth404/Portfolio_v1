@@ -1,0 +1,575 @@
+---
+import { site } from "../data/site";
+import { hero, stats, flowBand, availability } from "../data/about";
+import Icon from "./ui/Icon.astro";
+
+const [firstName, lastName] = site.name.split(" ");
+---
+
+<div
+	id="about"
+	class="relative flex flex-col lg:h-[calc(100dvh-125px)] lg:max-h-[calc(100dvh-125px)]"
+>
+	<span
+		class="pointer-events-none absolute top-0 left-0 z-40 h-5 w-5 border-t-2 border-l-2 border-accent"
+		aria-hidden="true"></span>
+	<span
+		class="pointer-events-none absolute top-0 right-0 z-40 h-5 w-5 border-t-2 border-r-2 border-accent"
+		aria-hidden="true"></span>
+	<span
+		class="pointer-events-none absolute bottom-0 left-0 z-40 h-5 w-5 border-b-2 border-l-2 border-accent"
+		aria-hidden="true"></span>
+	<span
+		class="pointer-events-none absolute right-0 bottom-0 z-40 h-5 w-5 border-b-2 border-r-2 border-accent"
+		aria-hidden="true"></span>
+	<div class="relative flex min-h-0 flex-1 flex-col bg-bg lg:overflow-hidden">
+		<div
+			class="absolute inset-0 pointer-events-none opacity-[0.03]"
+			style="background-image: linear-gradient(to right, var(--color-text) 1px, transparent 1px); background-size: 48px 100%;"
+		>
+		</div>
+
+		<header
+			class="flex justify-between items-center px-6 py-4 border-b border-text/10 relative z-30"
+		>
+			<div class="flex items-center gap-3">
+				<span
+					class="relative flex h-8 w-8 items-center justify-center rounded-full border border-text/10 bg-text/4"
+				>
+					<svg
+						class="h-4 w-4 text-accent"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.5"
+						aria-hidden="true"
+					>
+						<circle cx="12" cy="12" r="10"></circle>
+						<path d="M2 12h20"></path>
+						<path
+							d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"
+						></path>
+					</svg>
+					<span
+						class="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-accent animate-ping"
+					></span>
+					<span
+						class="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-accent"
+					></span>
+				</span>
+				<span class="text-xs uppercase tracking-widest text-text/70">
+					{hero.status}
+				</span>
+			</div>
+			<div
+				class="flex items-center gap-3 text-xs uppercase tracking-widest text-text/70"
+			>
+				<span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span>
+				<span id="live-time">SYS.SYNC // --:--:--</span>
+			</div>
+		</header>
+
+		<section class="relative flex min-h-0 flex-1 items-center lg:overflow-hidden">
+			<div
+				class="relative z-10 grid w-full grid-cols-1 gap-8 px-6 py-8 sm:px-10 lg:h-full lg:grid-cols-2 lg:items-stretch lg:gap-10 lg:py-6"
+			>
+				<div class="flex h-full flex-col justify-center">
+					<div
+						class="reveal text-sm text-accent tracking-[0.16em] uppercase mb-8 font-medium"
+						style="--d: 0ms"
+					>
+						{hero.eyebrow}
+					</div>
+					<h1
+						class="reveal font-sans font-extrabold text-4xl sm:text-5xl lg:text-6xl xl:text-7xl tracking-tighter uppercase text-text leading-[0.82]"
+						style="--d: 80ms"
+					>
+						{firstName}<br /><span class="block mt-3 text-accent"
+							>{lastName}</span
+						>
+					</h1>
+					<p
+						class="reveal mt-10 max-w-lg text-sm leading-relaxed text-text/70 sm:text-base"
+						style="--d: 160ms"
+					>
+						{hero.bio}
+					</p>
+					<div
+						class="reveal mt-10 flex flex-col sm:flex-row gap-4"
+						style="--d: 240ms"
+					>
+						<a
+							href="#get-in-touch"
+							class="text-sm uppercase tracking-widest bg-accent text-text px-7 py-3.5 rounded-lg hover:bg-accent/80 transition-colors text-center"
+						>
+							Get in touch
+						</a>
+						<a
+							href="#projects"
+							class="text-sm uppercase tracking-widest border border-text/20 text-text/70 px-7 py-3.5 rounded-lg hover:border-accent transition-colors text-center"
+						>
+							View work
+						</a>
+					</div>
+				</div>
+
+				<div class="reveal relative min-w-0 lg:h-full lg:min-h-0" style="--d: 200ms">
+					<div
+						class="flex flex-col overflow-hidden border border-text/10 bg-bg lg:absolute lg:inset-0"
+						role="region"
+						aria-label="Availability"
+					>
+						<div
+							class="grid min-h-0 flex-1 grid-cols-1 sm:grid-cols-[minmax(0,0.72fr)_minmax(0,1.28fr)]"
+						>
+							<div
+								class="flex min-h-0 flex-col justify-start gap-6 overflow-hidden px-4 pt-2.5 pb-3 sm:px-4"
+							>
+								<div
+									class="-mx-4 flex items-start justify-between gap-3 border-b border-text/10 px-4 pb-3"
+								>
+									<p
+										class="text-[0.95rem] font-medium uppercase leading-[1.05] tracking-[0.08em] text-text"
+									>
+										{availability.briefLabel.split(" ")[0]}<br />
+										{availability.briefLabel.split(" ")[1]}
+									</p>
+									<time
+										id="hiring-brief-date"
+										class="text-right text-[0.7rem] leading-tight text-text/70"
+									>
+										<span id="hiring-brief-month" class="block">—</span>
+										<span id="hiring-brief-year" class="block">—</span>
+									</time>
+								</div>
+
+								<div class="flex items-center gap-5">
+									<span
+										class="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-text/25 font-sans text-lg font-light tracking-tight text-text"
+									>
+										<span class="notice-orbit" aria-hidden="true"></span>
+										{availability.noticeDays}
+									</span>
+									<div>
+										<p
+											class="text-[0.55rem] uppercase tracking-[0.22em] text-text/70"
+										>
+											{availability.noticeLabel}
+										</p>
+										<p class="mt-0.5 text-sm tracking-tight text-text">
+											{availability.startLabel}
+										</p>
+									</div>
+								</div>
+
+								<div class="avail-rise" style="--d: 80ms">
+									<p
+										class="text-[0.55rem] uppercase tracking-[0.22em] text-text/70"
+									>
+										{availability.replyLabel}
+									</p>
+									<p
+										class="mt-1 font-sans text-xl font-light tracking-tight text-text"
+									>
+										{availability.reply}
+									</p>
+								</div>
+
+								<div class="avail-rise" style="--d: 160ms">
+									<p
+										class="text-[0.55rem] uppercase tracking-[0.22em] text-text/70"
+									>
+										{availability.engagementLabel}
+									</p>
+									<div class="mt-2 flex flex-col gap-1.5">
+										{
+											availability.engagement.map((item, i) => (
+												<span
+													class="avail-chip flex items-center gap-2 border border-accent/45 px-2.5 py-1.5 text-[0.72rem] tracking-tight text-text"
+													style={`--d: ${240 + i * 80}ms`}
+												>
+													<span
+														class="h-1.5 w-1.5 shrink-0 bg-accent"
+														aria-hidden="true"
+													/>
+													{item.label}
+												</span>
+											))
+										}
+									</div>
+								</div>
+							</div>
+
+							<figure
+								class="relative min-h-48 border-t border-text/10 bg-text/[0.03] sm:min-h-0 sm:border-t-0 sm:border-l"
+							>
+								<img
+									src={availability.photo}
+									alt={site.name}
+									class="absolute inset-0 h-full w-full object-cover object-[center_35%]"
+								/>
+							</figure>
+						</div>
+
+						<div class="grid grid-cols-2 border-t border-text/10">
+							{
+								[
+									...availability.facts,
+									{
+										label: availability.authorizationLabel,
+										value: availability.authorization,
+										icon: availability.authorizationIcon,
+									},
+								].map((fact, i) => (
+									<div
+										class:list={[
+											"flex items-start gap-2 px-3 py-2.5 sm:px-4",
+											i % 2 === 1 && "border-l border-text/10",
+											"border-b border-text/10",
+										]}
+									>
+										<Icon icon={fact.icon} class="mt-0.5 h-4 w-4 shrink-0" />
+										<div class="min-w-0">
+											<p class="text-[0.55rem] uppercase tracking-[0.16em] text-text/70">
+												{fact.label}
+											</p>
+											<p class="mt-0.5 text-sm tracking-tight text-text">
+												{fact.value}
+											</p>
+										</div>
+									</div>
+								))
+							}
+							<div
+								class="col-span-2 flex items-center justify-between gap-4 px-3 py-2.5 sm:px-4"
+							>
+								<div class="flex items-center gap-2">
+									<Icon
+										icon={availability.languageIcon}
+										class="h-4 w-4 shrink-0"
+									/>
+									<div>
+										<p
+											class="text-[0.55rem] uppercase tracking-[0.22em] text-text/70"
+										>
+											{availability.languageLabel}
+										</p>
+										<p class="mt-0.5 text-sm tracking-tight text-text">
+											{availability.language}
+										</p>
+									</div>
+								</div>
+								<div class="flex items-center gap-3">
+									<span
+										class="text-[0.55rem] uppercase tracking-[0.22em] text-text/70"
+									>
+										{availability.fluency}
+									</span>
+									<div class="flex gap-1" aria-hidden="true">
+										{
+											[0, 1, 2, 3, 4].map((i) => (
+												<span class="avail-seg" style={`--i: ${i}`} />
+											))
+										}
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<section
+			class="flow-viewport relative z-30 overflow-hidden border-t border-text/10 bg-bg"
+			aria-label="Stack, services, and working notes"
+		>
+			<div class="flow-track flex w-max items-center py-2.5">
+				{
+					[0, 1].map((copy) => (
+						<ul
+							class="m-0 flex list-none items-center p-0"
+							aria-hidden={copy === 1 ? "true" : undefined}
+						>
+							{flowBand.map((item) => (
+								<li class="flex items-center">
+									<span class="whitespace-nowrap px-4 text-[0.65rem] uppercase tracking-widest text-text/70">
+										{item}
+									</span>
+									<span class="text-[0.55rem] text-accent" aria-hidden="true">
+										★
+									</span>
+								</li>
+							))}
+						</ul>
+					))
+				}
+			</div>
+		</section>
+
+		<!-- Stats Bar -->
+		<section
+			class="grid grid-cols-4 border-t border-text/10 relative z-30 bg-bg"
+		>
+			{
+				stats.map((stat, i) => (
+					<div
+						class:list={[
+							"px-4 py-3.5 text-center",
+							i < stats.length - 1 && "border-r border-text/10",
+						]}
+					>
+						<div
+							class="stat-count font-sans font-light text-3xl tracking-tight text-text"
+							data-target={stat.target}
+							data-suffix={stat.suffix}
+						>
+							0
+						</div>
+						<div class="text-[0.65rem] uppercase tracking-widest text-text/70 mt-1">
+							{stat.label}
+						</div>
+					</div>
+				))
+			}
+		</section>
+	</div>
+</div>
+
+<script>
+	import { onDomReady } from "../lib/dom";
+	import { easeOutCubic } from "../lib/easing";
+
+	function startClock() {
+		const el = document.getElementById("live-time");
+		if (!el) return;
+
+		const formatter = new Intl.DateTimeFormat("en-GB", {
+			timeZone: "Europe/London",
+			hour: "2-digit",
+			minute: "2-digit",
+			second: "2-digit",
+			hour12: false,
+			timeZoneName: "short",
+		});
+
+		function update() {
+			const now = new Date();
+			const parts = formatter.formatToParts(now);
+			const get = (type: string) =>
+				parts.find((p) => p.type === type)?.value ?? "";
+			const time = `${get("hour")}:${get("minute")}:${get("second")}`;
+			const zone = get("timeZoneName");
+			el!.textContent = `SYS.SYNC // ${time} ${zone}`;
+			syncHiringDate(now);
+		}
+
+		update();
+		window.setInterval(update, 1000);
+	}
+
+	function syncHiringDate(now: Date) {
+		const monthEl = document.getElementById("hiring-brief-month");
+		const yearEl = document.getElementById("hiring-brief-year");
+		const timeEl = document.getElementById("hiring-brief-date");
+		if (!monthEl || !yearEl || !timeEl) return;
+
+		const parts = new Intl.DateTimeFormat("en-GB", {
+			timeZone: "Europe/London",
+			month: "short",
+			year: "numeric",
+		}).formatToParts(now);
+		const get = (type: string) =>
+			parts.find((p) => p.type === type)?.value ?? "";
+		const month = get("month");
+		const year = get("year");
+
+		if (monthEl.textContent !== month) monthEl.textContent = month;
+		if (yearEl.textContent !== year) yearEl.textContent = year;
+		const isoMonth = new Intl.DateTimeFormat("en-CA", {
+			timeZone: "Europe/London",
+			year: "numeric",
+			month: "2-digit",
+		}).format(now);
+		timeEl.setAttribute("datetime", isoMonth.slice(0, 7));
+	}
+
+	function revealIntro() {
+		const items = document.querySelectorAll<HTMLElement>(".reveal");
+		items.forEach((el) => {
+			const delay = el.style.getPropertyValue("--d") || "0ms";
+			el.animate(
+				[
+					{ opacity: 0, transform: "translateY(16px)" },
+					{ opacity: 1, transform: "translateY(0)" },
+				],
+				{
+					duration: 700,
+					delay: parseInt(delay, 10),
+					easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+					fill: "both",
+				},
+			);
+		});
+	}
+
+	function animateStats() {
+		const counters = document.querySelectorAll<HTMLElement>(".stat-count");
+		counters.forEach((counter) => {
+			const target = parseInt(counter.getAttribute("data-target") ?? "0", 10);
+			const suffix = counter.getAttribute("data-suffix") ?? "";
+			const duration = 1400;
+			const start = performance.now();
+
+			function step(now: number) {
+				const progress = Math.min((now - start) / duration, 1);
+				const eased = easeOutCubic(progress);
+				counter.textContent = `${Math.round(eased * target)}${suffix}`;
+				if (progress < 1) requestAnimationFrame(step);
+			}
+			requestAnimationFrame(step);
+		});
+	}
+
+	function init() {
+		startClock();
+		revealIntro();
+		animateStats();
+	}
+
+	onDomReady(init);
+</script>
+
+<style>
+	.notice-orbit {
+		position: absolute;
+		inset: -5px;
+		border-radius: 9999px;
+		border: 1.5px solid transparent;
+		border-top-color: var(--color-accent);
+		border-right-color: color-mix(
+			in srgb,
+			var(--color-accent) 40%,
+			transparent
+		);
+		pointer-events: none;
+		animation: notice-orbit 2.6s linear infinite;
+	}
+
+	.avail-rise {
+		animation: avail-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+		animation-delay: var(--d, 0ms);
+	}
+
+	.avail-chip {
+		animation: avail-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+		animation-delay: var(--d, 0ms);
+	}
+
+	.avail-seg {
+		display: block;
+		width: 0.85rem;
+		height: 0.28rem;
+		background: var(--color-accent);
+		transform-origin: left center;
+		animation: avail-seg 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+		animation-delay: calc(0.7s + var(--i) * 90ms);
+	}
+
+	.flow-viewport {
+		mask-image: linear-gradient(
+			90deg,
+			transparent,
+			#000 5%,
+			#000 95%,
+			transparent
+		);
+	}
+
+	.flow-track {
+		animation: flow-marquee 48s linear infinite;
+	}
+
+	.flow-viewport:hover .flow-track {
+		animation-play-state: paused;
+	}
+
+	@keyframes notice-orbit {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+
+	@keyframes avail-rise {
+		from {
+			opacity: 0;
+			transform: translateY(12px);
+		}
+
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@keyframes avail-seg {
+		from {
+			opacity: 0.2;
+			transform: scaleX(0.15);
+		}
+
+		to {
+			opacity: 1;
+			transform: scaleX(1);
+		}
+	}
+
+	@keyframes flow-marquee {
+		from {
+			transform: translateX(0);
+		}
+
+		to {
+			transform: translateX(-50%);
+		}
+	}
+
+	@media (max-height: 820px) {
+		#about h1 {
+			font-size: 4.5rem;
+			line-height: 0.82;
+		}
+
+		#about h1 + p {
+			margin-top: 1.5rem;
+		}
+
+		#about h1 + p + div {
+			margin-top: 1.75rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.notice-orbit,
+		.avail-rise,
+		.avail-chip,
+		.avail-seg,
+		.flow-track {
+			animation: none;
+		}
+
+		.notice-orbit {
+			opacity: 0;
+			transform: none;
+		}
+
+		.avail-seg {
+			opacity: 1;
+			transform: none;
+		}
+
+		.flow-viewport {
+			overflow-x: auto;
+		}
+	}
+</style>

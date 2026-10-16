@@ -1,0 +1,305 @@
+---
+import { testimonials } from "../data/testimonials";
+import { sections } from "../data/sections";
+import SectionHeader from "./ui/SectionHeader.astro";
+import CornerBrackets from "./ui/CornerBrackets.astro";
+
+const { testimonials: section } = sections;
+---
+
+<section id="testimonials" class="mt-24">
+	<SectionHeader
+		eyebrow={section.eyebrow}
+		title={section.title}
+		description={section.description}
+		revealClass="testimonials-reveal"
+	/>
+
+	<div class="testimonials-reveal relative mt-12" style="--d: 100ms">
+		<div class="overflow-hidden" id="testimonial-viewport">
+			<div
+				id="testimonial-track"
+				class="flex gap-4 transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform"
+				data-count={testimonials.length}
+			>
+				{
+					testimonials.map((item, index) => (
+						<article class="testimonial-slide shrink-0" data-index={index}>
+							<div class="testimonial-card group relative h-full rounded-xl border border-text/10 bg-text/2 p-6 sm:p-7 transition-all duration-500 hover:border-accent/35 hover:bg-accent/4 hover:-translate-y-1 hover:shadow-accent-lift">
+								<CornerBrackets />
+
+								<div class="flex items-start justify-between gap-4 mb-5">
+									<div
+										class="flex gap-0.5"
+										aria-label={`${item.rating} out of 5 stars`}
+									>
+										{Array.from({ length: item.rating }).map(() => (
+											<svg
+												class="h-3.5 w-3.5 text-accent"
+												viewBox="0 0 24 24"
+												fill="currentColor"
+												aria-hidden="true"
+											>
+												<path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" />
+											</svg>
+										))}
+									</div>
+									<span
+										class="font-serif text-5xl leading-none text-accent/15 select-none"
+										aria-hidden="true"
+									>
+										"
+									</span>
+								</div>
+
+								<p class="text-[0.65rem] sm:text-xs text-text/90 uppercase tracking-wide leading-relaxed text-center min-h-[7.5rem] sm:min-h-[6.5rem]">
+									"{item.quote}"
+								</p>
+
+								<div class="my-5 h-px bg-text/10" />
+
+								<div class="flex items-center gap-3">
+									<img
+										src={item.avatar}
+										alt={item.name}
+										width="40"
+										height="40"
+										class="h-10 w-10 rounded-full border border-accent/30 object-cover"
+										loading="lazy"
+									/>
+									<div class="min-w-0 text-left">
+										<p class="font-sans font-medium text-xs uppercase tracking-wider text-text truncate">
+											{item.name}
+										</p>
+										<p class="text-[0.55rem] uppercase tracking-wider text-text/60 truncate">
+											{item.role}
+										</p>
+									</div>
+								</div>
+							</div>
+						</article>
+					))
+				}
+			</div>
+		</div>
+
+		<div class="mt-8 flex items-center justify-center gap-4">
+			<button
+				type="button"
+				id="testimonial-prev"
+				class="testimonial-nav flex h-10 w-10 items-center justify-center rounded-full border border-text/15 text-text/70 transition-all duration-300 hover:border-accent/40 hover:text-text hover:bg-accent/10 disabled:opacity-30 disabled:pointer-events-none"
+				aria-label="Previous testimonials"
+			>
+				<svg
+					class="h-4 w-4"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.5"
+				>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d="M15 19l-7-7 7-7"></path>
+				</svg>
+			</button>
+
+			<div id="testimonial-dots" class="flex items-center gap-2"></div>
+
+			<button
+				type="button"
+				id="testimonial-next"
+				class="testimonial-nav flex h-10 w-10 items-center justify-center rounded-full border border-text/15 text-text/70 transition-all duration-300 hover:border-accent/40 hover:text-text hover:bg-accent/10 disabled:opacity-30 disabled:pointer-events-none"
+				aria-label="Next testimonials"
+			>
+				<svg
+					class="h-4 w-4"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.5"
+				>
+					<path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"
+					></path>
+				</svg>
+			</button>
+		</div>
+	</div>
+</section>
+
+<script>
+	import { onDomReady } from "../lib/dom";
+	import { observeSectionReveal } from "../lib/reveal";
+
+	function initTestimonials() {
+		const section = document.getElementById("testimonials");
+		const track = document.getElementById("testimonial-track");
+		const viewport = document.getElementById("testimonial-viewport");
+		const prevBtn = document.getElementById("testimonial-prev");
+		const nextBtn = document.getElementById("testimonial-next");
+		const dotsEl = document.getElementById("testimonial-dots");
+
+		if (
+			!section ||
+			!track ||
+			!viewport ||
+			!(prevBtn instanceof HTMLButtonElement) ||
+			!(nextBtn instanceof HTMLButtonElement) ||
+			!dotsEl
+		) {
+			return;
+		}
+
+		const slides = Array.from(
+			track.querySelectorAll<HTMLElement>(".testimonial-slide"),
+		);
+		const total = slides.length;
+		let current = 0;
+		let perView = 3;
+		let maxIndex = 0;
+		let autoplayTimer = 0;
+		const GAP = 16;
+
+		const getPerView = () => {
+			if (window.innerWidth >= 1024) return 3;
+			if (window.innerWidth >= 640) return 2;
+			return 1;
+		};
+
+		const buildDots = () => {
+			dotsEl.innerHTML = "";
+			for (let i = 0; i <= maxIndex; i++) {
+				const dot = document.createElement("button");
+				dot.type = "button";
+				dot.className =
+					"testimonial-dot h-1.5 rounded-full transition-all duration-300";
+				dot.setAttribute("aria-label", `Go to slide ${i + 1}`);
+				dot.addEventListener("click", () => goTo(i));
+				dotsEl.appendChild(dot);
+			}
+		};
+
+		const updateDots = () => {
+			dotsEl
+				.querySelectorAll<HTMLButtonElement>(".testimonial-dot")
+				.forEach((dot, i) => {
+					const active = i === current;
+					dot.classList.toggle("w-6", active);
+					dot.classList.toggle("w-1.5", !active);
+					dot.classList.toggle("bg-accent", active);
+					dot.classList.toggle("bg-text/20", !active);
+				});
+		};
+
+		const layout = () => {
+			perView = getPerView();
+			maxIndex = Math.max(total - perView, 0);
+			if (current > maxIndex) current = maxIndex;
+
+			const viewportW = viewport.clientWidth;
+			const slideWidth = (viewportW - GAP * (perView - 1)) / perView;
+			slides.forEach((slide) => {
+				slide.style.width = `${slideWidth}px`;
+			});
+
+			buildDots();
+			updateDots();
+			applyTransform(false);
+			prevBtn.disabled = current === 0;
+			nextBtn.disabled = current >= maxIndex;
+		};
+
+		const applyTransform = (animate = true) => {
+			const viewportW = viewport.clientWidth;
+			const slideWidth = (viewportW - GAP * (perView - 1)) / perView;
+			const offset = current * (slideWidth + GAP);
+			track.style.transitionDuration = animate ? "700ms" : "0ms";
+			track.style.transform = `translateX(-${offset}px)`;
+
+			slides.forEach((slide, i) => {
+				const visible = i >= current && i < current + perView;
+				const card = slide.querySelector<HTMLElement>(".testimonial-card");
+				if (!card || !visible || !animate) return;
+
+				card.animate(
+					[
+						{ opacity: 0.6, transform: "translateY(12px) scale(0.98)" },
+						{ opacity: 1, transform: "translateY(0) scale(1)" },
+					],
+					{
+						duration: 500,
+						delay: (i - current) * 80,
+						easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+						fill: "both",
+					},
+				);
+			});
+
+			prevBtn.disabled = current === 0;
+			nextBtn.disabled = current >= maxIndex;
+			updateDots();
+		};
+
+		const goTo = (index: number) => {
+			current = Math.max(0, Math.min(index, maxIndex));
+			applyTransform(true);
+			resetAutoplay();
+		};
+
+		const next = () => {
+			if (current < maxIndex) goTo(current + 1);
+			else goTo(0);
+		};
+
+		const prev = () => {
+			if (current > 0) goTo(current - 1);
+			else goTo(maxIndex);
+		};
+
+		const resetAutoplay = () => {
+			if (autoplayTimer) window.clearInterval(autoplayTimer);
+			autoplayTimer = window.setInterval(next, 6000);
+		};
+
+		prevBtn.addEventListener("click", prev);
+		nextBtn.addEventListener("click", next);
+
+		let resizeTimer = 0;
+		window.addEventListener("resize", () => {
+			window.clearTimeout(resizeTimer);
+			resizeTimer = window.setTimeout(layout, 150);
+		});
+
+		layout();
+		resetAutoplay();
+
+		section.addEventListener("mouseenter", () => {
+			if (autoplayTimer) window.clearInterval(autoplayTimer);
+		});
+		section.addEventListener("mouseleave", resetAutoplay);
+
+		observeSectionReveal("testimonials", ".testimonials-reveal", {
+			threshold: 0.15,
+			onReveal: () => {
+				slides.slice(0, perView).forEach((slide, i) => {
+					const card = slide.querySelector<HTMLElement>(".testimonial-card");
+					if (!card) return;
+					card.animate(
+						[
+							{ opacity: 0, transform: "translateY(28px) scale(0.96)" },
+							{ opacity: 1, transform: "translateY(0) scale(1)" },
+						],
+						{
+							duration: 650,
+							delay: 200 + i * 100,
+							easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+							fill: "both",
+						},
+					);
+				});
+			},
+		});
+	}
+
+	onDomReady(initTestimonials);
+</script>

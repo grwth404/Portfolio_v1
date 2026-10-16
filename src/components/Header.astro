@@ -1,0 +1,250 @@
+---
+import { site } from "../data/site";
+
+const { nav, shortName } = site;
+---
+
+<header
+	id="site-header"
+	class="sticky top-0 z-50 border-b border-text/10 bg-transparent transition-[background-color,backdrop-filter] duration-300"
+>
+	<div
+		class="max-w-[1400px] mx-auto px-6 sm:px-16 h-16 flex items-center justify-between gap-4"
+	>
+		<a
+			href="#about"
+			class="nav-anchor flex items-center gap-3 shrink-0 group"
+			aria-label="Back to top"
+		>
+			<span
+				class="flex h-8 w-8 items-center justify-center rounded-full border border-accent/40 bg-accent/10 text-accent transition-colors group-hover:bg-accent/20"
+			>
+				<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+					<path
+						d="M4 18h16v2H4v-2zm2.5-11l2 5 3.5-7 3.5 7 2-5L19 16H5l1.5-9z"
+						fill="currentColor"></path>
+				</svg>
+			</span>
+			<span class="font-sans font-medium text-sm tracking-tighter text-text">
+				{shortName.split(" ")[0]}
+				<span class="text-accent ml-1">{shortName.split(" ")[1]}</span>
+			</span>
+		</a>
+
+		<nav
+			class="hidden lg:flex items-center gap-1"
+			aria-label="Primary navigation"
+		>
+			{
+				nav.map((link) => (
+					<a
+						href={link.href}
+						data-nav-link={link.href}
+						class="nav-anchor relative px-3 py-2 font-mono-custom text-[0.65rem] uppercase tracking-widest text-text/70 hover:text-text transition-colors duration-300"
+					>
+						{link.label}
+						<span class="nav-indicator absolute bottom-0 left-3 right-3 h-px bg-accent scale-x-0 transition-transform duration-300 origin-left" />
+					</a>
+				))
+			}
+		</nav>
+
+		<div class="flex items-center gap-2 sm:gap-3">
+			<button
+				type="button"
+				id="theme-toggle"
+				class="flex h-9 w-9 items-center justify-center rounded-lg border border-text/15 text-text/80 hover:border-accent/40 hover:text-text transition-colors cursor-pointer"
+				aria-label="Switch to light mode"
+			>
+				<svg
+					class="theme-icon-sun h-4 w-4"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.5"
+					aria-hidden="true"
+				>
+					<circle cx="12" cy="12" r="3.25"></circle>
+					<path
+						stroke-linecap="round"
+						d="M12 3v1.5M12 19.5V21M4.9 4.9l1.06 1.06M18.04 18.04l1.06 1.06M3 12h1.5M19.5 12H21M4.9 19.1l1.06-1.06M18.04 5.96l1.06-1.06"
+					></path>
+				</svg>
+				<svg
+					class="theme-icon-moon h-4 w-4"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.5"
+					aria-hidden="true"
+				>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d="M21 14.5A8.5 8.5 0 1 1 9.5 3a7 7 0 0 0 11.5 11.5z"></path>
+				</svg>
+			</button>
+			<button
+				type="button"
+				id="nav-toggle"
+				class="lg:hidden flex h-9 w-9 items-center justify-center rounded-lg border border-text/15 text-text/80 hover:border-accent/40 hover:text-text transition-colors"
+				aria-label="Toggle menu"
+				aria-expanded="false"
+			>
+				<svg
+					id="nav-toggle-icon"
+					class="h-4 w-4"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.5"
+				>
+					<path stroke-linecap="round" d="M4 7h16M4 12h16M4 17h16"></path>
+				</svg>
+			</button>
+			<!-- <a
+				href="#get-in-touch"
+				class="nav-anchor text-[0.65rem] sm:text-xs uppercase tracking-widest text-text border border-accent px-3 sm:px-4 py-2 rounded-lg hover:bg-accent hover:text-on-accent transition-all duration-300"
+			>
+				Contact
+			</a> -->
+		</div>
+	</div>
+
+	<nav
+		id="mobile-nav"
+		class="lg:hidden hidden border-t border-text/10 bg-bg/95 backdrop-blur-md"
+		aria-label="Mobile navigation"
+	>
+		<div
+			class="max-w-[1400px] mx-auto px-6 sm:px-16 py-3 grid grid-cols-2 sm:grid-cols-3 gap-1"
+		>
+			{
+				nav.map((link) => (
+					<a
+						href={link.href}
+						data-nav-link={link.href}
+						class="nav-anchor rounded-lg px-3 py-2.5 font-mono-custom text-[0.65rem] uppercase tracking-widest text-text/70 hover:text-text hover:bg-accent/10 transition-colors duration-300"
+					>
+						{link.label}
+					</a>
+				))
+			}
+		</div>
+	</nav>
+</header>
+
+<script>
+	import { onDomReady } from "../lib/dom";
+	import { readTheme, toggleTheme } from "../lib/theme";
+
+	function initHeader() {
+		const header = document.getElementById("site-header");
+		const themeToggle = document.getElementById("theme-toggle");
+		const toggle = document.getElementById("nav-toggle");
+		const mobileNav = document.getElementById("mobile-nav");
+		const navLinks =
+			document.querySelectorAll<HTMLAnchorElement>("[data-nav-link]");
+
+		const syncThemeToggle = () => {
+			if (!themeToggle) return;
+			const light = readTheme() === "light";
+			themeToggle.setAttribute(
+				"aria-label",
+				light ? "Switch to dark mode" : "Switch to light mode",
+			);
+		};
+
+		if (themeToggle) {
+			syncThemeToggle();
+			themeToggle.addEventListener("click", () => {
+				toggleTheme();
+				syncThemeToggle();
+			});
+		}
+
+		const syncHeaderSurface = () => {
+			if (!header) return;
+			const scrolled = window.scrollY > 8;
+			const menuOpen = mobileNav
+				? !mobileNav.classList.contains("hidden")
+				: false;
+			header.classList.toggle("is-scrolled", scrolled || menuOpen);
+		};
+
+		if (toggle && mobileNav) {
+			toggle.addEventListener("click", () => {
+				mobileNav.classList.toggle("hidden");
+				const isOpen = !mobileNav.classList.contains("hidden");
+				toggle.setAttribute("aria-expanded", String(isOpen));
+				syncHeaderSurface();
+			});
+		}
+
+		syncHeaderSurface();
+		window.addEventListener("scroll", syncHeaderSurface, { passive: true });
+
+		const sectionIds = Array.from(navLinks).map(
+			(link) => link.dataset.navLink ?? "",
+		);
+		const sections = sectionIds
+			.map((id) => document.querySelector(id))
+			.filter((el): el is HTMLElement => el !== null);
+
+		const setActive = (hash: string) => {
+			navLinks.forEach((link) => {
+				const active = link.dataset.navLink === hash;
+				link.classList.toggle("text-accent", active);
+				link.classList.toggle("text-text/70", !active);
+				const indicator = link.querySelector<HTMLElement>(".nav-indicator");
+				if (indicator) {
+					indicator.classList.toggle("scale-x-100", active);
+					indicator.classList.toggle("scale-x-0", !active);
+				}
+			});
+		};
+
+		const observer = new IntersectionObserver(
+			(entries) => {
+				const visible = entries
+					.filter((e) => e.isIntersecting)
+					.sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+
+				if (visible[0]?.target.id) {
+					setActive(`#${visible[0].target.id}`);
+				}
+			},
+			{
+				rootMargin: "-30% 0px -55% 0px",
+				threshold: [0.1, 0.25, 0.5],
+			},
+		);
+
+		sections.forEach((section) => observer.observe(section));
+
+		if (sections[0]) {
+			setActive(`#${sections[0].id}`);
+		}
+	}
+
+	onDomReady(initHeader);
+</script>
+
+<style>
+	#site-header.is-scrolled {
+		background-color: color-mix(in srgb, var(--color-bg) 92%, transparent);
+		backdrop-filter: blur(12px);
+	}
+
+	.theme-icon-moon {
+		display: none;
+	}
+
+	:global(html[data-theme="light"]) .theme-icon-sun {
+		display: none;
+	}
+
+	:global(html[data-theme="light"]) .theme-icon-moon {
+		display: block;
+	}
+</style>

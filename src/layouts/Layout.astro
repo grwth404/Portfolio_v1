@@ -1,0 +1,165 @@
+---
+import "../styles/global.css";
+import Header from "../components/Header.astro";
+import Loading from "../components/Loading.astro";
+import { site } from "../data/site";
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width" />
+		<meta name="generator" content={Astro.generator} />
+		<title>{site.title}</title>
+		<meta
+			name="description"
+			content={site.tagline}
+		/>
+		<link rel="icon" href="/favicon.ico" sizes="any" />
+		<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+		<meta name="theme-color" content="#18181b" />
+		<script is:inline>
+			(function () {
+				try {
+					var theme = localStorage.getItem("theme");
+					if (theme !== "light" && theme !== "dark") theme = "dark";
+					document.documentElement.dataset.theme = theme;
+					document.documentElement.style.colorScheme = theme;
+					var meta = document.querySelector('meta[name="theme-color"]');
+					if (meta) {
+						meta.setAttribute(
+							"content",
+							theme === "light" ? "#f4f4f5" : "#18181b",
+						);
+					}
+				} catch (e) {
+					document.documentElement.dataset.theme = "dark";
+				}
+			})();
+		</script>
+	</head>
+	<body>
+		<Loading />
+		<div
+			class="fixed top-0 bottom-0 left-4 sm:left-12 w-px bg-text/10 z-0 pointer-events-none overflow-hidden"
+		>
+			<div
+				class="border-beam absolute left-0 -top-24 w-px h-24 bg-linear-to-b from-transparent via-accent to-transparent"
+			>
+			</div>
+		</div>
+		<div
+			class="fixed top-0 bottom-0 right-4 sm:right-12 w-px bg-text/10 z-0 pointer-events-none overflow-hidden"
+		>
+			<div
+				class="border-beam absolute left-0 -top-24 w-px h-24 bg-linear-to-b from-transparent via-accent to-transparent"
+			>
+			</div>
+		</div>
+		<Header />
+		<main class="max-w-[1400px] mx-auto px-6 sm:px-16 pt-10 relative z-20">
+			<slot />
+		</main>
+
+		<script>
+			import { onDomReady } from "../lib/dom";
+
+			function getHeaderOffset() {
+				const header = document.getElementById("site-header");
+				return (header?.offsetHeight ?? 64) + 16;
+			}
+
+			function initSmoothScroll() {
+				document.querySelectorAll<HTMLAnchorElement>('a[href^="#"]').forEach(
+					(anchor) => {
+						anchor.addEventListener("click", (event) => {
+							const href = anchor.getAttribute("href");
+							if (!href || href === "#") return;
+
+							const target = document.querySelector(href);
+							if (!target) return;
+
+							event.preventDefault();
+
+							const mobileNav = document.getElementById("mobile-nav");
+							const toggle = document.getElementById("nav-toggle");
+							mobileNav?.classList.add("hidden");
+							toggle?.setAttribute("aria-expanded", "false");
+
+							// About is the first view. Landing on its offset leaves a
+							// few pixels of scroll, which keeps the header filled.
+							const top =
+								href === "#about"
+									? 0
+									: target.getBoundingClientRect().top +
+										window.scrollY -
+										getHeaderOffset();
+
+							const prefersReduced = window.matchMedia(
+								"(prefers-reduced-motion: reduce)",
+							).matches;
+
+							window.scrollTo({
+								top,
+								behavior: prefersReduced ? "auto" : "smooth",
+							});
+
+							history.pushState(null, "", href);
+
+							if (!prefersReduced) {
+								target.classList.remove("section-scroll-highlight");
+								void (target as HTMLElement).offsetWidth;
+								target.classList.add("section-scroll-highlight");
+								window.setTimeout(() => {
+									target.classList.remove("section-scroll-highlight");
+								}, 900);
+							}
+						});
+					},
+				);
+			}
+
+			function startBeams() {
+				const beams = document.querySelectorAll<HTMLElement>(".border-beam");
+				const travel = window.innerHeight + 96;
+
+				beams.forEach((beam, index) => {
+					beam.animate(
+						[
+							{ transform: "translateY(0)", opacity: 0 },
+							{ opacity: 1, offset: 0.1 },
+							{ opacity: 1, offset: 0.9 },
+							{
+								transform: `translateY(${travel}px)`,
+								opacity: 0,
+							},
+						],
+						{
+							duration: 5000,
+							iterations: Infinity,
+							easing: "cubic-bezier(0.45, 0, 0.55, 1)",
+							delay: index * 2500,
+						},
+					);
+				});
+			}
+
+			onDomReady(() => {
+				initSmoothScroll();
+				startBeams();
+			});
+		</script>
+	</body>
+</html>
+
+<style>
+	html,
+	body {
+		margin: 0;
+		width: 100%;
+		font-family: var(--font-sans);
+		color: var(--color-text);
+	}
+</style>

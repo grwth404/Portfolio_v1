@@ -1,0 +1,28 @@
+---
+import { iconUrl } from "../../data/site";
+
+interface Props {
+	icon: string;
+	color?: string;
+	size?: number;
+	class?: string;
+	alt?: string;
+}
+
+const {
+	icon,
+	color = "8b3a2a",
+	size = 16,
+	class: className = "h-4 w-4 object-contain",
+	alt = "",
+} = Astro.props;
+---
+
+<img
+	src={iconUrl(icon, color)}
+	alt={alt}
+	width={size}
+	height={size}
+	class={className}
+	loading="lazy"
+/>

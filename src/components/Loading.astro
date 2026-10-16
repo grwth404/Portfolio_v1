@@ -1,0 +1,155 @@
+---
+import { site } from "../data/site";
+
+const { shortName, bootLog } = site;
+const segments = Array.from({ length: 10 });
+const [first, last] = shortName.split(" ");
+---
+
+<div
+	id="loading-screen"
+	class="fixed inset-0 z-9999 flex items-center justify-center bg-bg transition-opacity duration-700 ease-out"
+	aria-label="Loading"
+	aria-hidden="false"
+>
+	<div
+		class="pointer-events-none absolute inset-0 opacity-[0.04]"
+		style="background-image: linear-gradient(to right, var(--color-text) 1px, transparent 1px), linear-gradient(to bottom, var(--color-text) 1px, transparent 1px); background-size: 48px 48px;"
+	>
+	</div>
+	<div
+		class="pointer-events-none absolute top-1/2 left-1/2 h-[560px] w-[560px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/10 blur-[120px] animate-pulse"
+	>
+	</div>
+
+	<div class="absolute top-5 left-5 flex items-center gap-3">
+		<span
+			class="flex h-8 w-8 items-center justify-center rounded-full border border-accent/40 bg-accent/10 text-accent"
+		>
+			<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+				<path
+					d="M4 18h16v2H4v-2zm2.5-11l2 5 3.5-7 3.5 7 2-5L19 16H5l1.5-9z"
+					fill="currentColor"></path>
+			</svg>
+		</span>
+		<span class="font-sans font-medium text-sm tracking-tighter text-text">
+			{first}
+			<span class="text-accent ml-1">{last}</span>
+		</span>
+	</div>
+
+	<div
+		class="relative z-10 flex w-[min(90vw,30rem)] flex-col items-center gap-8"
+	>
+		<div class="flex items-baseline gap-1">
+			<span
+				id="loading-percent"
+				class="font-sans text-6xl font-extralight tracking-tight text-text tabular-nums"
+				>0</span
+			>
+			<span class="font-sans text-3xl font-extralight text-accent">%</span>
+		</div>
+
+		<div
+			id="loading-bar"
+			class="relative h-10 w-full overflow-hidden rounded-lg border border-text/15 bg-text/3"
+			role="progressbar"
+			aria-valuemin="0"
+			aria-valuemax="100"
+			aria-valuenow="0"
+		>
+			<div
+				id="loading-fill"
+				class="absolute inset-y-0 left-0 w-0 bg-linear-to-r from-accent/50 via-accent to-accent-bright"
+			>
+			</div>
+			<div
+				id="loading-shine"
+				class="absolute inset-y-0 left-0 w-0 bg-linear-to-r from-transparent via-white/25 to-transparent"
+			>
+			</div>
+			<div class="absolute inset-0 grid grid-cols-10">
+				{
+					segments.map((_, i) => (
+						<span class:list={["h-full", i < 9 && "border-r border-bg/60"]} />
+					))
+				}
+			</div>
+		</div>
+
+		<div
+			class="flex h-5 items-center gap-2 text-[0.7rem] uppercase tracking-[0.3em] text-accent"
+		>
+			<span class="h-1.5 w-1.5 animate-ping rounded-full bg-accent"></span>
+			<span id="loading-log">{bootLog[0]}</span>
+			<span class="animate-pulse text-text/80">_</span>
+		</div>
+	</div>
+</div>
+
+<script>
+	import { onDomReady } from "../lib/dom";
+	import { easeOutCubic } from "../lib/easing";
+	import { site } from "../data/site";
+
+	const bootLog = site.bootLog;
+	const DURATION = 2800;
+	const HOLD_AT_COMPLETE = 400;
+
+	function completeLoading(screen: HTMLElement) {
+		screen.classList.add("opacity-0", "pointer-events-none");
+		screen.setAttribute("aria-hidden", "true");
+		document.documentElement.style.overflow = "";
+		screen.addEventListener("transitionend", () => screen.remove(), {
+			once: true,
+		});
+	}
+
+	function runLoading() {
+		const screen = document.getElementById("loading-screen");
+		const percentEl = document.getElementById("loading-percent");
+		const fillEl = document.getElementById("loading-fill");
+		const shineEl = document.getElementById("loading-shine");
+		const barEl = document.getElementById("loading-bar");
+		const logEl = document.getElementById("loading-log");
+
+		if (!screen || !percentEl || !fillEl || !shineEl || !barEl || !logEl)
+			return;
+
+		const screenEl = screen;
+		const percent = percentEl;
+		const fill = fillEl;
+		const shine = shineEl;
+		const bar = barEl;
+		const log = logEl;
+
+		document.documentElement.style.overflow = "hidden";
+		const start = performance.now();
+
+		function tick(now: number) {
+			const progress = Math.min((now - start) / DURATION, 1);
+			const value = Math.round(easeOutCubic(progress) * 100);
+
+			percent.textContent = String(value);
+			fill.style.width = `${value}%`;
+			shine.style.width = `${value}%`;
+			bar.setAttribute("aria-valuenow", String(value));
+
+			const step = Math.min(
+				bootLog.length - 1,
+				Math.floor((value / 100) * bootLog.length),
+			);
+			log.textContent = bootLog[step];
+
+			if (progress < 1) {
+				requestAnimationFrame(tick);
+				return;
+			}
+			window.setTimeout(() => completeLoading(screenEl), HOLD_AT_COMPLETE);
+		}
+
+		requestAnimationFrame(tick);
+	}
+
+	onDomReady(runLoading);
+</script>

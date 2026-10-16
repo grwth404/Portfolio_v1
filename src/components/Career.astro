@@ -1,0 +1,148 @@
+---
+import { careers } from "../data/career";
+import { sections } from "../data/sections";
+import { iconUrl } from "../data/site";
+import SectionHeader from "./ui/SectionHeader.astro";
+import CornerBrackets from "./ui/CornerBrackets.astro";
+
+const { career: section } = sections;
+---
+
+<section id="career" class="mt-24">
+	<SectionHeader
+		eyebrow={section.eyebrow}
+		title={section.title}
+		description={section.description}
+		revealClass="career-reveal"
+	/>
+
+	<div
+		class="career-reveal mt-12 grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-5"
+		style="--d: 120ms"
+	>
+		{
+			careers.map((job, index) => (
+				<div
+					class="career-flip group h-[360px] sm:h-[380px] [perspective:1000px]"
+					style={`--d: ${200 + index * 100}ms`}
+				>
+					<div class="relative h-full w-full transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] group-focus-within:[transform:rotateY(180deg)]">
+						<div class="absolute inset-0 [backface-visibility:hidden] rounded-xl border border-text/10 bg-text/2 p-6 flex flex-col">
+							<CornerBrackets />
+
+							<div class="flex items-start justify-between gap-3 mb-5">
+								<span class="text-[0.6rem] uppercase tracking-wider px-2 py-0.5 rounded border border-accent/30 bg-accent/10 text-accent">
+									{job.company}
+								</span>
+								<span class="text-[0.5rem] uppercase tracking-widest text-text/50 shrink-0">
+									flip →
+								</span>
+							</div>
+
+							<h3 class="font-sans font-light text-lg tracking-tight text-text uppercase">
+								{job.role}
+							</h3>
+							<p class="mt-2 text-[0.55rem] uppercase tracking-wider text-text/60">
+								{job.period} · {job.location}
+							</p>
+
+							<p class="mt-5 flex-1 text-[0.65rem] text-text/70 uppercase tracking-wide leading-relaxed">
+								{job.summary}
+							</p>
+
+							<ul class="mt-4 space-y-2">
+								{job.highlights.map((item) => (
+									<li class="flex items-center gap-2 text-[0.55rem] uppercase tracking-wider text-text/65">
+										<span class="h-1 w-1 shrink-0 rounded-full bg-accent" />
+										{item}
+									</li>
+								))}
+							</ul>
+						</div>
+
+						<div class="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)] rounded-xl border border-accent/25 bg-bg p-6 flex flex-col items-center text-center">
+							<CornerBrackets />
+
+							<div class="mt-4 flex h-20 w-full items-center justify-center rounded-lg border border-text/10 bg-text/4 px-6">
+								<img
+									src={iconUrl(job.logoIcon, "c8c4bc")}
+									alt={`${job.company} logo`}
+									width="120"
+									height="40"
+									class="max-h-10 w-auto object-contain opacity-90"
+									loading="lazy"
+								/>
+							</div>
+
+							<h3 class="mt-5 font-sans font-light text-base uppercase tracking-tight text-text">
+								{job.company}
+							</h3>
+
+							<p class="mt-4 flex-1 text-[0.65rem] text-text/70 uppercase tracking-wide leading-relaxed">
+								{job.intro}
+							</p>
+
+							<a
+								href={job.website}
+								target="_blank"
+								rel="noopener noreferrer"
+								class="mt-5 inline-flex items-center gap-2 text-[0.6rem] uppercase tracking-widest text-accent border border-accent/40 px-4 py-2.5 rounded-lg hover:bg-accent hover:text-on-accent transition-colors duration-300 cursor-pointer"
+							>
+								Visit Website
+								<svg
+									class="h-3 w-3"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="1.5"
+									aria-hidden="true"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										d="M13.5 6H18m0 0v4.5M18 6l-8.25 8.25M6 18v-3.75a2.25 2.25 0 0 1 2.25-2.25H12"
+									/>
+								</svg>
+							</a>
+						</div>
+					</div>
+				</div>
+			))
+		}
+	</div>
+</section>
+
+<script>
+	import { onDomReady } from "../lib/dom";
+	import { observeSectionReveal } from "../lib/reveal";
+
+	function initCareer() {
+		observeSectionReveal("career", ".career-reveal", {
+			threshold: 0.15,
+			onReveal: () => {
+				document
+					.querySelectorAll<HTMLElement>("#career .career-flip")
+					.forEach((card) => {
+						const delay = parseInt(
+							card.style.getPropertyValue("--d") || "0",
+							10,
+						);
+						card.animate(
+							[
+								{ opacity: 0, transform: "translateY(28px) scale(0.96)" },
+								{ opacity: 1, transform: "translateY(0) scale(1)" },
+							],
+							{
+								duration: 650,
+								delay,
+								easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+								fill: "both",
+							},
+						);
+					});
+			},
+		});
+	}
+
+	onDomReady(initCareer);
+</script>

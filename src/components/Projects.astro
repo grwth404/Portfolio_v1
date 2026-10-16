@@ -1,0 +1,1876 @@
+---
+import { categories, projects } from "../data/projects";
+import { sections } from "../data/sections";
+import {
+	buildProjectChart,
+	projectInitials,
+	projectSortKey,
+	projectYear,
+} from "../lib/projectChart";
+import { paginateGrid } from "../lib/projectPages";
+import ProjectPhoto from "./ui/ProjectPhoto.astro";
+import SectionHeader from "./ui/SectionHeader.astro";
+
+const { projects: section } = sections;
+const stacks = [...new Set(projects.flatMap((project) => project.techs))].sort(
+	(a, b) => a.localeCompare(b),
+);
+const chart = buildProjectChart(
+	projects.map((project) => projectYear(project.date)),
+);
+const chartLabel = chart.points
+	.filter((point) => !point.seat)
+	.map((point) => `${point.year}: ${point.value}`)
+	.join(", ");
+const gridPages = paginateGrid(
+	projects,
+	(project) => project.featured === true,
+);
+const firstPage = gridPages[0] ?? [];
+const pageCount = Math.max(1, gridPages.length);
+const showingEnd = firstPage.length;
+---
+
+<section id="projects" class="mt-24">
+	<SectionHeader
+		eyebrow={section.eyebrow}
+		title={section.title}
+		description={`${projects.length}+ ${section.description}`}
+		revealClass="projects-reveal"
+	/>
+
+	<div
+		class="projects-panel relative mt-12 overflow-visible border border-text/15 bg-bg"
+	>
+		<span
+			class="pointer-events-none absolute -top-px -left-px z-20 h-5 w-5 border-t-2 border-l-2 border-accent-bright"
+			aria-hidden="true"></span>
+		<span
+			class="pointer-events-none absolute -top-px -right-px z-20 h-5 w-5 border-t-2 border-r-2 border-accent-bright"
+			aria-hidden="true"></span>
+		<span
+			class="pointer-events-none absolute -bottom-px -left-px z-20 h-5 w-5 border-b-2 border-l-2 border-accent-bright"
+			aria-hidden="true"></span>
+		<span
+			class="pointer-events-none absolute -right-px -bottom-px z-20 h-5 w-5 border-b-2 border-r-2 border-accent-bright"
+			aria-hidden="true"></span>
+
+		<div class="px-4 pt-5 pb-4 sm:px-5">
+			<fieldset class="project-field projects-chart">
+				<legend class="project-legend">Projects by year</legend>
+				<div class="chart-stage">
+					<svg
+						id="projects-chart"
+						class="block w-full"
+						viewBox={`0 0 ${chart.width} ${chart.height}`}
+						role="img"
+						aria-label={chartLabel}
+					>
+						<title>Projects by year</title>
+						{
+							chart.grid.map((line) => (
+								<line
+									class={line.axis ? "chart-axis" : "chart-grid"}
+									x1={line.x1}
+									y1={line.y1}
+									x2={line.x2}
+									y2={line.y2}
+								/>
+							))
+						}
+						<path class="chart-line" d={chart.line}></path>
+						{
+							chart.points
+								.filter((point) => point.now)
+								.map((point) => (
+									<line
+										class="chart-year-line"
+										x1={point.x}
+										y1={chart.plot.y}
+										x2={point.x}
+										y2={chart.plot.y + chart.plot.height}
+									/>
+								))
+						}
+						<line
+							class="chart-guide"
+							x1="0"
+							y1={chart.plot.y}
+							x2="0"
+							y2={chart.plot.y + chart.plot.height}></line>
+						{
+							chart.ticks.map((tick) => (
+								<text
+									class="chart-tick"
+									x={chart.padL - 8}
+									y={tick.y}
+									text-anchor="end"
+									dominant-baseline="central"
+								>
+									{tick.value}
+								</text>
+							))
+						}
+						<text
+							class="chart-now-label"
+							x={chart.points.find((point) => point.now)?.x}
+							y={chart.plot.y - 6}
+							text-anchor="middle"
+						>
+							now
+						</text>
+						{
+							chart.points
+								.filter((point) => !point.seat)
+								.map((point) => (
+									<g
+										class:list={["chart-node", point.now && "is-now"]}
+										data-year={point.year}
+										data-value={point.value}
+										data-x={point.x}
+										data-y={point.y}
+										tabindex="0"
+										role="button"
+										aria-label={`${point.year}: ${point.value} ${point.value === 1 ? "project" : "projects"}`}
+									>
+										{point.now && (
+											<circle
+												class="chart-now"
+												cx={point.x}
+												cy={point.y}
+												r={point.r + 5}
+											/>
+										)}
+										<circle
+											class="chart-hit"
+											cx={point.x}
+											cy={point.y}
+											r={point.r + 8}
+										/>
+										<circle cx={point.x} cy={point.y} r={point.r} />
+										<text
+											class:list={[
+												"chart-value",
+												point.value >= 10 && "is-wide",
+											]}
+											x={point.x}
+											y={point.y}
+											text-anchor="middle"
+											dominant-baseline="central"
+										>
+											{point.value}
+										</text>
+									</g>
+								))
+						}
+						{
+							chart.points
+								.filter((point) => !point.seat)
+								.map((point) => (
+									<text
+										class:list={["chart-label", point.now && "is-now"]}
+										x={point.x}
+										y={chart.height - 8}
+										text-anchor="middle"
+									>
+										{point.year}
+									</text>
+								))
+						}
+					</svg>
+					<p id="projects-chart-tip" class="chart-tip" hidden></p>
+				</div>
+			</fieldset>
+		</div>
+
+		<div class="border-b border-text/10 px-4 pt-2 pb-5 sm:px-5">
+			<div class="grid gap-4 lg:grid-cols-2">
+				<fieldset class="project-field">
+					<legend class="project-legend">View controls</legend>
+					<div class="grid gap-3 sm:grid-cols-2">
+						<div>
+							<p class="project-kicker">View mode</p>
+							<div class="view-switch mt-2" role="group" aria-label="View mode">
+								<button
+									type="button"
+									class="view-btn is-active"
+									data-view="grid"
+									aria-pressed="true"
+								>
+									<svg viewBox="0 0 16 16" aria-hidden="true">
+										<rect x="1.5" y="1.5" width="5" height="5"></rect>
+										<rect x="9.5" y="1.5" width="5" height="5"></rect>
+										<rect x="1.5" y="9.5" width="5" height="5"></rect>
+										<rect x="9.5" y="9.5" width="5" height="5"></rect>
+									</svg>
+									Grid
+								</button>
+								<button
+									type="button"
+									class="view-btn"
+									data-view="list"
+									aria-pressed="false"
+								>
+									<svg viewBox="0 0 16 16" aria-hidden="true">
+										<path d="M2 4h12M2 8h12M2 12h12"></path>
+									</svg>
+									List
+								</button>
+								<button
+									type="button"
+									class="view-btn"
+									data-view="dense"
+									aria-pressed="false"
+								>
+									<svg viewBox="0 0 16 16" aria-hidden="true">
+										<rect x="1.5" y="1.5" width="3" height="3"></rect>
+										<rect x="6.5" y="1.5" width="3" height="3"></rect>
+										<rect x="11.5" y="1.5" width="3" height="3"></rect>
+										<rect x="1.5" y="6.5" width="3" height="3"></rect>
+										<rect x="6.5" y="6.5" width="3" height="3"></rect>
+										<rect x="11.5" y="6.5" width="3" height="3"></rect>
+										<rect x="1.5" y="11.5" width="3" height="3"></rect>
+										<rect x="6.5" y="11.5" width="3" height="3"></rect>
+										<rect x="11.5" y="11.5" width="3" height="3"></rect>
+									</svg>
+									Dense
+								</button>
+							</div>
+						</div>
+						<label class="block">
+							<span class="project-kicker">Sort by</span>
+							<select id="projects-sort" class="project-select mt-2">
+								<option value="newest">Newest first</option>
+								<option value="oldest">Oldest first</option>
+								<option value="az">Title A–Z</option>
+								<option value="za">Title Z–A</option>
+							</select>
+						</label>
+					</div>
+				</fieldset>
+
+				<fieldset class="project-field">
+					<legend class="project-legend">Filters</legend>
+					<div class="grid gap-3 sm:grid-cols-2">
+						<label class="block">
+							<span class="project-kicker">Stack</span>
+							<select id="projects-stack" class="project-select mt-2">
+								<option value="all">All</option>
+								{stacks.map((stack) => <option value={stack}>{stack}</option>)}
+							</select>
+						</label>
+						<label class="block">
+							<span class="project-kicker">Type</span>
+							<select id="projects-type" class="project-select mt-2">
+								{
+									categories.map((category) => (
+										<option value={category === "All" ? "all" : category}>
+											{category}
+										</option>
+									))
+								}
+							</select>
+						</label>
+					</div>
+				</fieldset>
+			</div>
+
+			<label class="project-search-wrap mt-4">
+				<svg
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.75"
+					aria-hidden="true"
+				>
+					<circle cx="11" cy="11" r="7"></circle>
+					<path d="M20 20l-3.5-3.5" stroke-linecap="round"></path>
+				</svg>
+				<input
+					id="projects-search"
+					class="project-search"
+					type="search"
+					placeholder="Search projects..."
+					autocomplete="off"
+					spellcheck="false"
+					aria-label="Search projects"
+				/>
+			</label>
+		</div>
+
+		<div class="p-4 sm:p-5">
+			<div id="projects-stage" class="projects-stage is-grid">
+				{
+					projects.map((project) => {
+						const year = projectYear(project.date);
+						const initials = projectInitials(project.title);
+						const extra = Math.max(project.techs.length - 3, 0);
+						const featured =
+							firstPage[0] === project && project.featured === true;
+						const flag = project.caseStudy
+							? "Case Study"
+							: project.openSource
+								? "Open Source"
+								: undefined;
+						const search = [
+							project.title,
+							project.description,
+							project.category,
+							project.date,
+							...project.techs,
+						]
+							.join(" ")
+							.toLowerCase();
+						return (
+							<article
+								class:list={["project-card", featured && "is-featured"]}
+								data-index={projects.indexOf(project)}
+								data-year={year}
+								data-sort={projectSortKey(project.date)}
+								data-type={project.category}
+								data-title={project.title}
+								data-stacks={project.techs.join("|")}
+								data-search={search}
+								data-featured={project.featured ? "true" : "false"}
+								hidden={!firstPage.includes(project)}
+							>
+								<span class="project-featured-badge">
+									<svg viewBox="0 0 24 24" aria-hidden="true">
+										<path d="M6 3h12v18l-6-3.4L6 21V3z" fill="currentColor" />
+									</svg>
+									Featured
+								</span>
+								<ProjectPhoto src={project.image} initials={initials} />
+								<div class="project-body">
+									{flag && <span class="project-flag">{flag}</span>}
+									<div class="project-head">
+										<h3 class="project-title">{project.title}</h3>
+										<time class="project-date">{project.date}</time>
+									</div>
+									<p class="project-kind">{project.category}</p>
+									<p class="project-copy">{project.description}</p>
+									<div class="project-techs">
+										{project.techs.map((tech, techIndex) => (
+											<span
+												class:list={[
+													"project-tech",
+													techIndex >= 3 && "project-tech-extra",
+												]}
+												hidden={techIndex >= 3}
+											>
+												{tech}
+											</span>
+										))}
+										{extra > 0 && (
+											<button
+												type="button"
+												class="project-tech-more"
+												data-count={extra}
+												aria-expanded="false"
+												aria-label={`Show ${extra} more technologies`}
+											>
+												+{extra}
+											</button>
+										)}
+									</div>
+									{project.demo && (
+										<div class="project-foot">
+											<a
+												class="project-details"
+												href={project.demo}
+												target="_blank"
+												rel="noopener noreferrer"
+											>
+												View details
+												<svg
+													viewBox="0 0 24 24"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="1.75"
+													aria-hidden="true"
+												>
+													<path
+														d="M5 12h14M13 6l6 6-6 6"
+														stroke-linecap="round"
+														stroke-linejoin="round"
+													/>
+												</svg>
+											</a>
+											<a
+												class="project-globe"
+												href={project.demo}
+												target="_blank"
+												rel="noopener noreferrer"
+												aria-label={`Open ${project.title} in a new tab`}
+											>
+												<svg
+													viewBox="0 0 24 24"
+													fill="none"
+													stroke="currentColor"
+													stroke-width="1.5"
+													aria-hidden="true"
+												>
+													<circle cx="12" cy="12" r="9" />
+													<path d="M3 12h18" />
+													<path d="M12 3c2.6 2.7 3.9 5.8 3.9 9s-1.3 6.3-3.9 9c-2.6-2.7-3.9-5.8-3.9-9S9.4 5.7 12 3z" />
+												</svg>
+											</a>
+										</div>
+									)}
+								</div>
+							</article>
+						);
+					})
+				}
+			</div>
+			<p id="projects-empty" class="projects-empty" hidden>
+				No projects match that filter.
+			</p>
+		</div>
+
+		<div
+			class="flex flex-wrap items-center justify-between gap-3 border-t border-text/10 px-4 py-3.5 sm:px-5"
+		>
+			<p id="projects-range" class="project-range" aria-live="polite">
+				Showing 1–{showingEnd} of {projects.length}
+			</p>
+			<nav aria-label="Project pages">
+				<div id="projects-pages" class="flex flex-wrap items-center gap-1.5">
+					<button type="button" class="page-btn page-nav" disabled>Prev</button>
+					{
+						Array.from({ length: pageCount }, (_, index) => (
+							<button
+								type="button"
+								class:list={["page-btn", index === 0 && "is-active"]}
+								aria-current={index === 0 ? "page" : undefined}
+							>
+								{index + 1}
+							</button>
+						))
+					}
+					<button
+						type="button"
+						class="page-btn page-nav"
+						disabled={pageCount <= 1}
+					>
+						Next
+					</button>
+				</div>
+			</nav>
+		</div>
+	</div>
+</section>
+
+<script>
+	import { buildProjectChart } from "../lib/projectChart";
+	import { DENSE_PAGE, LIST_PAGE, paginateGrid } from "../lib/projectPages";
+	import { onDomReady } from "../lib/dom";
+	import { observeSectionReveal } from "../lib/reveal";
+
+	const SVG_NS = "http://www.w3.org/2000/svg";
+	const PAGE_SIZE = { list: LIST_PAGE, dense: DENSE_PAGE } as const;
+	const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
+
+	type ViewMode = "grid" | "list" | "dense";
+
+	function initProjects() {
+		const section = document.getElementById("projects");
+		const stage = document.getElementById("projects-stage");
+		const empty = document.getElementById("projects-empty");
+		const range = document.getElementById("projects-range");
+		const pages = document.getElementById("projects-pages");
+		const search = document.getElementById("projects-search");
+		const sort = document.getElementById("projects-sort");
+		const stack = document.getElementById("projects-stack");
+		const type = document.getElementById("projects-type");
+		const chart = document.getElementById("projects-chart");
+		if (
+			!(section instanceof HTMLElement) ||
+			!(stage instanceof HTMLElement) ||
+			!(empty instanceof HTMLElement) ||
+			!(range instanceof HTMLElement) ||
+			!(pages instanceof HTMLElement) ||
+			!(search instanceof HTMLInputElement) ||
+			!(sort instanceof HTMLSelectElement) ||
+			!(stack instanceof HTMLSelectElement) ||
+			!(type instanceof HTMLSelectElement) ||
+			!(chart instanceof SVGSVGElement)
+		) {
+			return;
+		}
+
+		const stageEl = stage;
+		const emptyEl = empty;
+		const rangeEl = range;
+		const pagesEl = pages;
+		const searchEl = search;
+		const sortEl = sort;
+		const stackEl = stack;
+		const typeEl = type;
+		const chartEl = chart;
+		const tipEl = document.getElementById("projects-chart-tip");
+		const reduce = window.matchMedia(
+			"(prefers-reduced-motion: reduce)",
+		).matches;
+		const cards = Array.from(
+			stageEl.querySelectorAll<HTMLElement>(".project-card"),
+		);
+		const viewButtons = Array.from(
+			section.querySelectorAll<HTMLButtonElement>(".view-btn"),
+		);
+
+		let view: ViewMode = "grid";
+		let page = 1;
+		let touched = false;
+		let chartSig = cards
+			.map((card) => Number(card.dataset.year))
+			.sort((a, b) => a - b)
+			.join(",");
+
+		section.classList.add("is-enhanced");
+
+		stageEl.addEventListener(
+			"error",
+			(event) => {
+				const target = event.target;
+				if (!(target instanceof HTMLImageElement)) return;
+				if (!target.classList.contains("project-photo")) return;
+				target.closest(".project-visual")?.classList.remove("has-photo");
+				target.remove();
+			},
+			true,
+		);
+
+		stageEl.addEventListener("click", (event) => {
+			const target = event.target;
+			if (!(target instanceof Element)) return;
+			const button = target.closest<HTMLButtonElement>(".project-tech-more");
+			if (!button) return;
+			const card = button.closest(".project-card");
+			if (!card) return;
+			const expanded = button.getAttribute("aria-expanded") === "true";
+			const extra = button.dataset.count ?? "0";
+			card.classList.toggle("is-tech-open", !expanded);
+			card
+				.querySelectorAll<HTMLElement>(".project-tech-extra")
+				.forEach((tech) => {
+					tech.hidden = expanded;
+				});
+			button.setAttribute("aria-expanded", expanded ? "false" : "true");
+			button.textContent = expanded ? `+${extra}` : "–";
+			button.setAttribute(
+				"aria-label",
+				expanded
+					? `Show ${extra} more technologies`
+					: "Hide extra technologies",
+			);
+		});
+
+		function filtered() {
+			const query = searchEl.value.trim().toLowerCase();
+			const stackValue = stackEl.value;
+			const typeValue = typeEl.value;
+			const list = cards.filter((card) => {
+				const matchesType =
+					typeValue === "all" || card.dataset.type === typeValue;
+				const matchesStack =
+					stackValue === "all" ||
+					(card.dataset.stacks ?? "").split("|").includes(stackValue);
+				const matchesQuery =
+					query.length === 0 || (card.dataset.search ?? "").includes(query);
+				return matchesType && matchesStack && matchesQuery;
+			});
+
+			const direction = sortEl.value;
+			list.sort((a, b) => {
+				if (direction === "az" || direction === "za") {
+					const cmp = (a.dataset.title ?? "").localeCompare(
+						b.dataset.title ?? "",
+					);
+					return direction === "az" ? cmp : -cmp;
+				}
+				const diff = Number(a.dataset.sort) - Number(b.dataset.sort);
+				if (diff !== 0) return direction === "oldest" ? diff : -diff;
+				return Number(a.dataset.index) - Number(b.dataset.index);
+			});
+			return list;
+		}
+
+		function playCard(card: HTMLElement, index: number) {
+			card.getAnimations().forEach((animation) => animation.cancel());
+			if (reduce) return;
+			const animation = card.animate(
+				[
+					{ opacity: 0, transform: "translateY(18px)" },
+					{ opacity: 1, transform: "translateY(0)" },
+				],
+				{
+					duration: 560,
+					delay: index * 70,
+					easing: EASE,
+					fill: "both",
+				},
+			);
+			animation.onfinish = () => animation.cancel();
+		}
+
+		function drawChart(years: number[], animate: boolean) {
+			hideChartTip();
+			const model = buildProjectChart(years);
+			chartEl.setAttribute("viewBox", `0 0 ${model.width} ${model.height}`);
+			chartEl.setAttribute(
+				"aria-label",
+				model.points
+					.filter((point) => !point.seat)
+					.map((point) => `${point.year}: ${point.value}`)
+					.join(", "),
+			);
+			chartEl.replaceChildren();
+
+			const title = document.createElementNS(SVG_NS, "title");
+			title.textContent = "Projects by year";
+			chartEl.append(title);
+
+			for (const segment of model.grid) {
+				const gridLine = document.createElementNS(SVG_NS, "line");
+				gridLine.setAttribute(
+					"class",
+					segment.axis ? "chart-axis" : "chart-grid",
+				);
+				gridLine.setAttribute("x1", String(segment.x1));
+				gridLine.setAttribute("y1", String(segment.y1));
+				gridLine.setAttribute("x2", String(segment.x2));
+				gridLine.setAttribute("y2", String(segment.y2));
+				chartEl.append(gridLine);
+			}
+
+			const path = document.createElementNS(SVG_NS, "path");
+			path.setAttribute("class", "chart-line");
+			path.setAttribute("d", model.line);
+			chartEl.append(path);
+
+			const guide = document.createElementNS(SVG_NS, "line");
+			guide.setAttribute("class", "chart-guide");
+			guide.setAttribute("x1", "0");
+			guide.setAttribute("y1", String(model.plot.y));
+			guide.setAttribute("x2", "0");
+			guide.setAttribute("y2", String(model.plot.y + model.plot.height));
+			chartEl.append(guide);
+
+			for (const tick of model.ticks) {
+				const text = document.createElementNS(SVG_NS, "text");
+				text.setAttribute("class", "chart-tick");
+				text.setAttribute("x", String(model.padL - 8));
+				text.setAttribute("y", String(tick.y));
+				text.setAttribute("text-anchor", "end");
+				text.setAttribute("dominant-baseline", "central");
+				text.textContent = String(tick.value);
+				chartEl.append(text);
+			}
+
+			const nowPoint = model.points.find((point) => point.now);
+			if (nowPoint) {
+				const yearLine = document.createElementNS(SVG_NS, "line");
+				yearLine.setAttribute("class", "chart-year-line");
+				yearLine.setAttribute("x1", String(nowPoint.x));
+				yearLine.setAttribute("y1", String(model.plot.y));
+				yearLine.setAttribute("x2", String(nowPoint.x));
+				yearLine.setAttribute("y2", String(model.plot.y + model.plot.height));
+				chartEl.append(yearLine);
+
+				const nowLabel = document.createElementNS(SVG_NS, "text");
+				nowLabel.setAttribute("class", "chart-now-label");
+				nowLabel.setAttribute("x", String(nowPoint.x));
+				nowLabel.setAttribute("y", String(model.plot.y - 6));
+				nowLabel.setAttribute("text-anchor", "middle");
+				nowLabel.textContent = "now";
+				chartEl.append(nowLabel);
+			}
+
+			for (const point of model.points) {
+				if (point.seat) continue;
+				const group = document.createElementNS(SVG_NS, "g");
+				group.setAttribute(
+					"class",
+					point.now ? "chart-node is-now" : "chart-node",
+				);
+				group.dataset.year = String(point.year);
+				group.dataset.value = String(point.value);
+				group.dataset.x = String(point.x);
+				group.dataset.y = String(point.y);
+				group.setAttribute("tabindex", "0");
+				group.setAttribute("role", "button");
+				group.setAttribute(
+					"aria-label",
+					`${point.year}: ${point.value} ${point.value === 1 ? "project" : "projects"}`,
+				);
+				if (point.now) {
+					const ring = document.createElementNS(SVG_NS, "circle");
+					ring.setAttribute("class", "chart-now");
+					ring.setAttribute("cx", String(point.x));
+					ring.setAttribute("cy", String(point.y));
+					ring.setAttribute("r", String(point.r + 5));
+					group.append(ring);
+				}
+				const hit = document.createElementNS(SVG_NS, "circle");
+				hit.setAttribute("class", "chart-hit");
+				hit.setAttribute("cx", String(point.x));
+				hit.setAttribute("cy", String(point.y));
+				hit.setAttribute("r", String(point.r + 8));
+				group.append(hit);
+				const circle = document.createElementNS(SVG_NS, "circle");
+				circle.setAttribute("cx", String(point.x));
+				circle.setAttribute("cy", String(point.y));
+				circle.setAttribute("r", String(point.r));
+				const text = document.createElementNS(SVG_NS, "text");
+				text.setAttribute(
+					"class",
+					point.value >= 10 ? "chart-value is-wide" : "chart-value",
+				);
+				text.setAttribute("x", String(point.x));
+				text.setAttribute("y", String(point.y));
+				text.setAttribute("text-anchor", "middle");
+				text.setAttribute("dominant-baseline", "central");
+				text.textContent = String(point.value);
+				group.append(circle, text);
+				chartEl.append(group);
+			}
+
+			for (const point of model.points) {
+				if (point.seat) continue;
+				const text = document.createElementNS(SVG_NS, "text");
+				text.setAttribute(
+					"class",
+					point.now ? "chart-label is-now" : "chart-label",
+				);
+				text.setAttribute("x", String(point.x));
+				text.setAttribute("y", String(model.height - 8));
+				text.setAttribute("text-anchor", "middle");
+				text.textContent = String(point.year);
+				chartEl.append(text);
+			}
+
+			if (animate) playChartMotion();
+		}
+
+		function playChartMotion() {
+			const path = chartEl.querySelector(".chart-line");
+			if (!(path instanceof SVGPathElement) || reduce) return;
+			const length = path.getTotalLength();
+			path.style.strokeDasharray = `${length}`;
+			path.style.strokeDashoffset = `${length}`;
+			const draw = path.animate(
+				[{ strokeDashoffset: length }, { strokeDashoffset: 0 }],
+				{
+					duration: 1400,
+					easing: EASE,
+					fill: "forwards",
+				},
+			);
+			draw.onfinish = () => {
+				path.style.strokeDasharray = "none";
+				path.style.strokeDashoffset = "0";
+				draw.cancel();
+			};
+			chartEl
+				.querySelectorAll<SVGGElement>(".chart-node")
+				.forEach((node, index) => {
+					const motion = node.animate(
+						[
+							{ opacity: 0, transform: "scale(0.2)" },
+							{ opacity: 1, transform: "scale(1)" },
+						],
+						{
+							duration: 520,
+							delay: 260 + index * 110,
+							easing: EASE,
+							fill: "both",
+						},
+					);
+					motion.onfinish = () => motion.cancel();
+				});
+			chartEl
+				.querySelectorAll<SVGElement>(
+					".chart-label, .chart-tick, .chart-now-label",
+				)
+				.forEach((node, index) => {
+					node.animate([{ opacity: 0 }, { opacity: 1 }], {
+						duration: 480,
+						delay: 40 + index * 35,
+						easing: EASE,
+						fill: "both",
+					});
+				});
+		}
+
+		function chartNodeFrom(target: EventTarget | null) {
+			if (!(target instanceof Element)) return null;
+			const node = target.closest(".chart-node");
+			return node instanceof SVGGElement ? node : null;
+		}
+
+		function showChartTip(node: SVGGElement) {
+			chartEl.querySelectorAll(".chart-node").forEach((other) => {
+				other.classList.toggle("is-hot", other === node);
+			});
+			const guide = chartEl.querySelector(".chart-guide");
+			if (guide) {
+				guide.setAttribute("x1", node.dataset.x ?? "0");
+				guide.setAttribute("x2", node.dataset.x ?? "0");
+				guide.classList.add("is-on");
+			}
+			if (!tipEl) return;
+			const year = node.dataset.year ?? "";
+			const value = Number(node.dataset.value ?? "0");
+			const viewBox = chartEl.viewBox.baseVal;
+			const x = Number(node.dataset.x) / viewBox.width;
+			const y = Number(node.dataset.y) / viewBox.height;
+			tipEl.textContent = `${year}: ${value} ${value === 1 ? "project" : "projects"}`;
+			tipEl.hidden = false;
+			tipEl.style.left = `${x * 100}%`;
+			tipEl.style.top = `${y * 100}%`;
+			tipEl.classList.toggle("is-above", y > 0.72);
+			tipEl.style.setProperty("--tip-shift", "0px");
+			const stage = chartEl.closest(".chart-stage");
+			if (!stage) return;
+			const stageRect = stage.getBoundingClientRect();
+			const tipRect = tipEl.getBoundingClientRect();
+			let shift = 0;
+			if (tipRect.left < stageRect.left + 6)
+				shift = stageRect.left + 6 - tipRect.left;
+			if (tipRect.right > stageRect.right - 6) {
+				shift = stageRect.right - 6 - tipRect.right;
+			}
+			tipEl.style.setProperty("--tip-shift", `${shift}px`);
+		}
+
+		function hideChartTip() {
+			chartEl.querySelectorAll(".chart-node").forEach((node) => {
+				node.classList.remove("is-hot");
+			});
+			chartEl.querySelector(".chart-guide")?.classList.remove("is-on");
+			if (tipEl) tipEl.hidden = true;
+		}
+
+		chartEl.addEventListener("pointerover", (event) => {
+			const node = chartNodeFrom(event.target);
+			if (node) showChartTip(node);
+		});
+		chartEl.addEventListener("pointerout", (event) => {
+			const node = chartNodeFrom(event.target);
+			if (!node) return;
+			const next = chartNodeFrom(event.relatedTarget);
+			if (next) return;
+			hideChartTip();
+		});
+		chartEl.addEventListener("focusin", (event) => {
+			const node = chartNodeFrom(event.target);
+			if (node) showChartTip(node);
+		});
+		chartEl.addEventListener("focusout", (event) => {
+			const next = chartNodeFrom(event.relatedTarget);
+			if (next) return;
+			hideChartTip();
+		});
+
+		function syncChart(list: HTMLElement[], animate: boolean) {
+			const years = list.map((card) => Number(card.dataset.year));
+			const sig = [...years].sort((a, b) => a - b).join(",");
+			if (sig === chartSig) return;
+			chartSig = sig;
+			drawChart(years, animate);
+		}
+
+		function renderPages(current: number, totalPages: number) {
+			pagesEl.replaceChildren();
+			const make = (
+				label: string,
+				target: number,
+				disabled: boolean,
+				nav = false,
+			) => {
+				const button = document.createElement("button");
+				button.type = "button";
+				button.className = nav ? "page-btn page-nav" : "page-btn";
+				button.textContent = label;
+				button.dataset.page = String(target);
+				button.disabled = disabled;
+				if (!nav && target === current) {
+					button.classList.add("is-active");
+					button.setAttribute("aria-current", "page");
+				}
+				return button;
+			};
+			pagesEl.append(make("Prev", current - 1, current <= 1, true));
+			for (let index = 1; index <= totalPages; index += 1) {
+				pagesEl.append(make(String(index), index, false));
+			}
+			pagesEl.append(make("Next", current + 1, current >= totalPages, true));
+		}
+
+		function pageSlice(list: HTMLElement[]) {
+			if (view === "grid") {
+				const pages = paginateGrid(
+					list,
+					(card) => card.dataset.featured === "true",
+				);
+				const totalPages = Math.max(1, pages.length);
+				page = Math.min(page, totalPages);
+				const current = pages[page - 1] ?? [];
+				const start = pages
+					.slice(0, page - 1)
+					.reduce((sum, items) => sum + items.length, 0);
+				return { totalPages, start, pageItems: current };
+			}
+			const size = PAGE_SIZE[view];
+			const totalPages = Math.max(1, Math.ceil(list.length / size));
+			page = Math.min(page, totalPages);
+			const start = (page - 1) * size;
+			return {
+				totalPages,
+				start,
+				pageItems: list.slice(start, start + size),
+			};
+		}
+
+		function apply(animate: boolean, scroll = false) {
+			const list = filtered();
+			const { totalPages, start, pageItems } = pageSlice(list);
+			const visible = new Set(pageItems);
+
+			stageEl.classList.remove("is-grid", "is-list", "is-dense");
+			stageEl.classList.add(`is-${view}`);
+
+			for (const card of cards) {
+				card.classList.remove("is-featured");
+				if (!visible.has(card)) {
+					card.hidden = true;
+					card.getAnimations().forEach((animation) => animation.cancel());
+				}
+			}
+
+			list.forEach((card, index) => {
+				card.style.order = String(index);
+			});
+
+			pageItems.forEach((card, index) => {
+				card.hidden = false;
+				const feature =
+					card.dataset.featured === "true" && (view !== "grid" || index === 0);
+				card.classList.toggle("is-featured", feature);
+				card.style.order = String(index);
+				if (animate) playCard(card, index);
+			});
+
+			emptyEl.hidden = list.length > 0;
+			if (list.length === 0) {
+				rangeEl.textContent = "Showing 0 of 0";
+			} else {
+				rangeEl.textContent = `Showing ${start + 1}–${start + pageItems.length} of ${list.length}`;
+			}
+			renderPages(
+				list.length === 0 ? 1 : page,
+				list.length === 0 ? 1 : totalPages,
+			);
+			pagesEl.hidden = list.length === 0;
+			if (animate && section) section.classList.add("is-in");
+			syncChart(list, animate);
+
+			if (scroll) {
+				const header = document.getElementById("site-header");
+				const offset = (header?.offsetHeight ?? 64) + 16;
+				const top =
+					stageEl.getBoundingClientRect().top + window.scrollY - offset;
+				if (stageEl.getBoundingClientRect().top < offset) {
+					window.scrollTo({ top, behavior: reduce ? "auto" : "smooth" });
+				}
+			}
+		}
+
+		for (const button of viewButtons) {
+			button.addEventListener("click", () => {
+				const next = button.dataset.view;
+				if (next !== "grid" && next !== "list" && next !== "dense") return;
+				view = next;
+				page = 1;
+				touched = true;
+				for (const other of viewButtons) {
+					const active = other === button;
+					other.classList.toggle("is-active", active);
+					other.setAttribute("aria-pressed", active ? "true" : "false");
+				}
+				apply(true);
+			});
+		}
+
+		sortEl.addEventListener("change", () => {
+			page = 1;
+			touched = true;
+			apply(true);
+		});
+		stackEl.addEventListener("change", () => {
+			page = 1;
+			touched = true;
+			apply(true);
+		});
+		typeEl.addEventListener("change", () => {
+			page = 1;
+			touched = true;
+			apply(true);
+		});
+		searchEl.addEventListener("input", () => {
+			page = 1;
+			touched = true;
+			apply(true);
+		});
+
+		pagesEl.addEventListener("click", (event) => {
+			const target = event.target;
+			if (!(target instanceof HTMLButtonElement)) return;
+			if (target.disabled || !target.dataset.page) return;
+			page = Number(target.dataset.page);
+			touched = true;
+			apply(true, true);
+		});
+
+		apply(false);
+
+		observeSectionReveal("projects", ".projects-reveal", {
+			threshold: 0.08,
+			onReveal: () => {
+				section.classList.add("is-in");
+				if (touched || reduce) return;
+				cards
+					.filter((card) => !card.hidden)
+					.forEach((card, index) => playCard(card, index));
+				playChartMotion();
+			},
+		});
+	}
+
+	onDomReady(initProjects);
+</script>
+
+<style is:global>
+	.projects-panel,
+	.project-card,
+	.project-flag,
+	.project-featured-badge,
+	.project-tech,
+	.project-tech-more,
+	.view-btn,
+	.project-select,
+	.project-search,
+	.page-btn {
+		border-radius: 0;
+	}
+
+	.project-field {
+		margin: 0;
+		min-inline-size: 0;
+		border: 1px solid color-mix(in srgb, var(--color-text) 22%, transparent);
+		padding: 0.9rem 0.85rem 0.85rem;
+	}
+
+	.project-legend {
+		padding: 0 0.45rem;
+		margin-left: 0.55rem;
+		background: var(--color-bg);
+		color: var(--color-accent-bright);
+		font-size: 0.62rem;
+		font-weight: 400;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+	}
+
+	.project-kicker {
+		display: block;
+		font-size: 0.62rem;
+		font-weight: 400;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--color-accent-bright);
+	}
+
+	.projects-chart {
+		user-select: none;
+		background-image: none;
+	}
+
+	.chart-stage {
+		position: relative;
+	}
+
+	.chart-grid,
+	.chart-axis,
+	.chart-guide,
+	.chart-year-line {
+		vector-effect: non-scaling-stroke;
+	}
+
+	.chart-grid {
+		stroke: color-mix(in srgb, var(--color-text) 28%, transparent);
+		stroke-width: 1;
+		stroke-dasharray: 3 4;
+	}
+
+	.chart-axis {
+		stroke: color-mix(in srgb, var(--color-text) 32%, transparent);
+		stroke-width: 1;
+	}
+
+	.chart-year-line {
+		stroke: var(--color-accent-bright);
+		stroke-width: 1.25;
+		stroke-dasharray: 1.5 3.5;
+		pointer-events: none;
+	}
+
+	.chart-guide {
+		stroke: var(--color-accent-bright);
+		stroke-width: 1;
+		stroke-dasharray: 2.5 3.5;
+		opacity: 0;
+		pointer-events: none;
+		transition: opacity 0.2s ease;
+	}
+
+	.chart-guide.is-on {
+		opacity: 0.85;
+	}
+
+	.chart-tip {
+		position: absolute;
+		z-index: 4;
+		transform: translate(calc(-50% + var(--tip-shift, 0px)), 1.75rem);
+		border: 1px solid color-mix(in srgb, var(--color-text) 18%, transparent);
+		background: var(--color-bg);
+		padding: 0.28rem 0.5rem;
+		font-size: 0.72rem;
+		font-weight: 300;
+		line-height: 1.2;
+		color: var(--color-text);
+		white-space: nowrap;
+		pointer-events: none;
+	}
+
+	.chart-tip.is-above {
+		transform: translate(
+			calc(-50% + var(--tip-shift, 0px)),
+			calc(-100% - 1.75rem)
+		);
+	}
+
+	.chart-tip[hidden] {
+		display: none;
+	}
+
+	.projects-chart text {
+		font-family: var(--font-sans);
+		font-weight: 300;
+	}
+
+	.chart-line {
+		fill: none;
+		stroke: var(--color-accent-bright);
+		stroke-linejoin: round;
+		stroke-linecap: round;
+	}
+
+	.chart-tick {
+		fill: color-mix(in srgb, var(--color-text) 62%, transparent);
+		font-size: 8px;
+		font-weight: 300;
+	}
+
+	.chart-label {
+		fill: color-mix(in srgb, var(--color-text) 82%, transparent);
+		font-size: 8px;
+		font-weight: 300;
+	}
+
+	.chart-label.is-now,
+	.chart-now-label {
+		fill: var(--color-accent-bright);
+	}
+
+	.chart-now-label {
+		font-size: 8px;
+		font-weight: 300;
+		letter-spacing: 0.14em;
+	}
+
+	.chart-node {
+		transform-box: fill-box;
+		transform-origin: center;
+		cursor: pointer;
+		outline: none;
+		transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	.chart-node circle {
+		fill: var(--color-bg);
+		stroke: var(--color-accent-bright);
+		stroke-width: 1;
+		transition: fill 0.28s ease;
+	}
+
+	.chart-node .chart-hit {
+		fill: transparent;
+		stroke: none;
+	}
+
+	.chart-node.is-hot {
+		transform: scale(1.22);
+	}
+
+	.chart-node.is-hot > circle:not(.chart-hit):not(.chart-now) {
+		fill: var(--color-accent-bright);
+	}
+
+	.chart-node.is-hot .chart-value {
+		fill: var(--color-on-accent);
+	}
+
+	.chart-node .chart-now {
+		fill: none;
+		stroke: var(--color-accent-bright);
+		stroke-width: 1.25;
+		stroke-dasharray: 2.4 2.2;
+		transform-box: fill-box;
+		transform-origin: center;
+		animation: chart-ring-dash 1.8s linear infinite;
+	}
+
+	.chart-value {
+		fill: var(--color-text);
+		font-size: 10px;
+		font-weight: 300;
+	}
+
+	.chart-value.is-wide {
+		font-size: 8.5px;
+	}
+
+	.view-switch {
+		display: inline-flex;
+		border: 1px solid color-mix(in srgb, var(--color-text) 22%, transparent);
+	}
+
+	.view-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		border: 0;
+		border-right: 1px solid
+			color-mix(in srgb, var(--color-text) 16%, transparent);
+		background: transparent;
+		padding: 0.45rem 0.75rem;
+		font-size: 0.78rem;
+		color: color-mix(in srgb, var(--color-text) 68%, transparent);
+		cursor: pointer;
+		transition:
+			background-color 0.2s ease,
+			color 0.2s ease,
+			border-color 0.2s ease;
+	}
+
+	.view-btn:last-child {
+		border-right: 0;
+	}
+
+	.view-btn svg {
+		width: 0.85rem;
+		height: 0.85rem;
+		flex-shrink: 0;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 1.4;
+	}
+
+	.view-btn[data-view="dense"] svg {
+		fill: currentColor;
+		stroke: none;
+	}
+
+	.view-btn:hover {
+		color: var(--color-text);
+	}
+
+	.view-btn.is-active {
+		border-color: var(--color-accent-bright);
+		background: var(--color-accent-bright);
+		color: var(--color-on-accent);
+	}
+
+	.project-select,
+	.project-search {
+		height: 2.35rem;
+		width: 100%;
+		border: 1px solid color-mix(in srgb, var(--color-text) 16%, transparent);
+		background-color: color-mix(in srgb, var(--color-text) 5%, var(--color-bg));
+		padding: 0 0.75rem;
+		font-size: 0.82rem;
+		color: var(--color-text);
+		outline: none;
+	}
+
+	.project-select {
+		appearance: none;
+		padding-right: 2rem;
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='1.8'%3E%3Cpath d='M6 9l6 6 6-6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+		background-repeat: no-repeat;
+		background-position: right 0.65rem center;
+		background-size: 0.85rem;
+	}
+
+	.project-select:focus,
+	.project-search:focus {
+		border-color: var(--color-accent-bright);
+	}
+
+	.project-search-wrap {
+		position: relative;
+		display: block;
+	}
+
+	.project-search-wrap svg {
+		position: absolute;
+		top: 50%;
+		left: 0.75rem;
+		width: 0.9rem;
+		height: 0.9rem;
+		transform: translateY(-50%);
+		color: color-mix(in srgb, var(--color-text) 55%, transparent);
+		pointer-events: none;
+	}
+
+	.project-search {
+		padding-left: 2.15rem;
+	}
+
+	.project-search::-webkit-search-cancel-button {
+		appearance: none;
+	}
+
+	.projects-stage.is-grid,
+	.projects-stage.is-dense {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 1rem;
+	}
+
+	.projects-stage.is-list {
+		display: flex;
+		flex-direction: column;
+		gap: 0.75rem;
+	}
+
+	.projects-stage.is-grid .project-card,
+	.projects-stage.is-dense .project-card {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.projects-stage.is-grid .project-card.is-featured,
+	.projects-stage.is-list .project-card {
+		display: grid;
+		grid-template-columns: 1fr;
+	}
+
+	.project-card {
+		position: relative;
+		min-width: 0;
+		border: 1px solid color-mix(in srgb, var(--color-text) 14%, transparent);
+		background: var(--color-bg);
+		transition:
+			transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+			border-color 0.35s ease,
+			box-shadow 0.35s ease;
+	}
+
+	.project-card::before {
+		content: "";
+		position: absolute;
+		top: 0;
+		left: 0;
+		z-index: 3;
+		width: 0;
+		height: 2px;
+		background: var(--color-accent-bright);
+		pointer-events: none;
+		transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	.project-card:hover {
+		transform: translateY(-4px);
+		border-color: var(--color-accent-bright);
+		box-shadow: 0 14px 32px rgb(193 80 47 / 0.18);
+	}
+
+	.project-card:hover::before {
+		width: 100%;
+	}
+
+	.project-visual {
+		position: relative;
+		display: grid;
+		height: 15.5rem;
+		place-items: center;
+		overflow: hidden;
+		background-color: color-mix(in srgb, var(--color-text) 4%, var(--color-bg));
+		background-image:
+			linear-gradient(
+				to right,
+				color-mix(in srgb, var(--color-text) 12%, transparent) 1px,
+				transparent 1px
+			),
+			linear-gradient(
+				to bottom,
+				color-mix(in srgb, var(--color-text) 12%, transparent) 1px,
+				transparent 1px
+			);
+		background-size: 24px 24px;
+		background-position: center;
+		transition: background-size 0.45s ease;
+	}
+
+	.project-photo {
+		position: absolute;
+		inset: 0;
+		z-index: 1;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		object-position: top center;
+	}
+
+	.project-visual.has-photo .project-mark {
+		opacity: 0;
+	}
+
+	.project-visual::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(
+			115deg,
+			transparent 32%,
+			rgb(255 255 255 / 0.14) 50%,
+			transparent 68%
+		);
+		transform: translateX(-130%);
+		pointer-events: none;
+	}
+
+	.project-card:hover .project-visual {
+		background-size: 28px 28px;
+	}
+
+	.project-card:hover .project-visual::after {
+		animation: project-sheen 0.8s ease;
+	}
+
+	.project-mark {
+		position: relative;
+		z-index: 1;
+		font-size: 4.25rem;
+		font-weight: 500;
+		line-height: 1;
+		letter-spacing: 0.12em;
+		color: color-mix(
+			in srgb,
+			var(--color-accent-bright) 76%,
+			var(--color-text)
+		);
+		transition:
+			transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+			color 0.35s ease;
+	}
+
+	.project-card:hover .project-mark {
+		transform: scale(1.06);
+		color: var(--color-accent-bright);
+	}
+
+	.project-body {
+		position: relative;
+		display: flex;
+		min-width: 0;
+		flex: 1;
+		flex-direction: column;
+		padding: 1rem 1rem 0.95rem;
+	}
+
+	.project-featured-badge {
+		display: none;
+		position: absolute;
+		top: 0;
+		left: 50%;
+		z-index: 5;
+		align-items: center;
+		gap: 0.28rem;
+		transform: translate(-50%, -50%);
+		border: 1px solid var(--color-accent-bright);
+		background: var(--color-bg);
+		padding: 0.16rem 0.48rem;
+		font-size: 0.58rem;
+		font-weight: 500;
+		letter-spacing: 0.16em;
+		line-height: 1.2;
+		text-transform: uppercase;
+		color: var(--color-accent-bright);
+		pointer-events: none;
+	}
+
+	.project-featured-badge svg {
+		width: 0.95rem;
+		height: 0.95rem;
+		flex-shrink: 0;
+	}
+
+	.project-card.is-featured .project-featured-badge {
+		display: inline-flex;
+	}
+
+	.project-flag {
+		position: absolute;
+		top: 0;
+		right: 0.85rem;
+		z-index: 4;
+		transform: translateY(-50%);
+		border: 1px solid var(--color-accent-bright);
+		background: var(--color-bg);
+		padding: 0.16rem 0.48rem;
+		font-size: 0.58rem;
+		font-weight: 500;
+		letter-spacing: 0.16em;
+		line-height: 1.2;
+		text-transform: uppercase;
+		color: var(--color-accent-bright);
+		pointer-events: none;
+	}
+
+	.project-head {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 0.75rem;
+	}
+
+	.project-title {
+		display: -webkit-box;
+		min-height: calc(1.25em * 2);
+		overflow: hidden;
+		font-size: 1rem;
+		font-weight: 500;
+		line-height: 1.25;
+		letter-spacing: -0.02em;
+		color: var(--color-text);
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 2;
+	}
+
+	.project-date {
+		flex-shrink: 0;
+		padding-top: 0.15rem;
+		font-size: 0.72rem;
+		white-space: nowrap;
+		color: color-mix(in srgb, var(--color-text) 48%, transparent);
+	}
+
+	.project-kind {
+		min-height: 1.25em;
+		margin-top: 0.35rem;
+		font-size: 0.8rem;
+		color: var(--color-accent-bright);
+	}
+
+	.project-copy {
+		display: -webkit-box;
+		min-height: calc(1.55em * 3);
+		margin-top: 0.65rem;
+		overflow: hidden;
+		-webkit-box-orient: vertical;
+		-webkit-line-clamp: 3;
+		font-size: 0.84rem;
+		line-height: 1.55;
+		color: color-mix(in srgb, var(--color-text) 70%, transparent);
+	}
+
+	.project-techs {
+		display: flex;
+		flex-wrap: wrap;
+		align-content: flex-start;
+		gap: 0.4rem;
+		height: 1.75rem;
+		margin-top: 0.9rem;
+		overflow: hidden;
+	}
+
+	.project-card.is-tech-open .project-techs {
+		height: auto;
+		overflow: visible;
+	}
+
+	.project-tech,
+	.project-tech-more {
+		border: 1px solid color-mix(in srgb, var(--color-text) 16%, transparent);
+		background: transparent;
+		padding: 0.16rem 0.45rem;
+		font-size: 0.68rem;
+		line-height: 1.35;
+		color: color-mix(in srgb, var(--color-text) 78%, transparent);
+	}
+
+	.project-tech-more {
+		border-color: color-mix(
+			in srgb,
+			var(--color-accent-bright) 45%,
+			transparent
+		);
+		color: var(--color-accent-bright);
+		cursor: pointer;
+	}
+
+	.project-tech-more:hover {
+		background: color-mix(in srgb, var(--color-accent-bright) 12%, transparent);
+	}
+
+	.project-tech-extra[hidden] {
+		display: none;
+	}
+
+	.project-foot {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.75rem;
+		margin-top: auto;
+		border-top: 1px solid color-mix(in srgb, var(--color-text) 10%, transparent);
+		padding-top: 0.85rem;
+	}
+
+	.project-details {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		font-size: 0.8rem;
+		color: var(--color-accent-bright);
+	}
+
+	.project-details svg,
+	.project-globe svg {
+		width: 0.9rem;
+		height: 0.9rem;
+	}
+
+	.project-details svg {
+		transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	.project-card:hover .project-details svg {
+		transform: translateX(3px);
+	}
+
+	.project-globe {
+		color: color-mix(in srgb, var(--color-text) 42%, transparent);
+	}
+
+	.project-globe:hover {
+		color: var(--color-accent-bright);
+	}
+
+	.projects-stage.is-grid .project-card.is-featured .project-visual {
+		height: 100%;
+		min-height: 22rem;
+	}
+
+	.projects-stage.is-grid .project-card.is-featured .project-mark {
+		font-size: 5.5rem;
+	}
+
+	.projects-stage.is-grid .project-card.is-featured .project-body {
+		padding: 1.35rem 1.35rem 1.15rem;
+	}
+
+	.projects-stage.is-grid .project-card.is-featured .project-title {
+		font-size: 1.45rem;
+	}
+
+	.projects-stage.is-grid .project-card.is-featured .project-copy {
+		min-height: calc(1.55em * 4);
+		-webkit-line-clamp: 4;
+	}
+
+	.projects-stage.is-list .project-card {
+		grid-template-columns: 17rem minmax(0, 1fr);
+		min-height: 15rem;
+	}
+
+	.projects-stage.is-list .project-visual {
+		height: auto;
+		min-height: 15rem;
+	}
+
+	.projects-stage.is-list .project-mark {
+		font-size: 3.4rem;
+	}
+
+	.projects-stage.is-list .project-copy {
+		min-height: calc(1.55em * 2);
+		-webkit-line-clamp: 2;
+	}
+
+	.projects-stage.is-dense .project-visual {
+		height: 10.5rem;
+	}
+
+	.projects-stage.is-dense .project-mark {
+		font-size: 2.5rem;
+	}
+
+	.projects-stage.is-dense .project-body {
+		padding: 0.75rem 0.8rem 0.7rem;
+	}
+
+	.projects-stage.is-dense .project-title {
+		font-size: 0.92rem;
+	}
+
+	.projects-stage.is-dense .project-copy {
+		min-height: calc(1.55em * 2);
+		-webkit-line-clamp: 2;
+		font-size: 0.75rem;
+	}
+
+	.projects-empty {
+		padding: 4rem 1rem;
+		text-align: center;
+		font-size: 0.9rem;
+		color: color-mix(in srgb, var(--color-text) 60%, transparent);
+	}
+
+	.project-range {
+		font-size: 0.78rem;
+		color: color-mix(in srgb, var(--color-text) 55%, transparent);
+	}
+
+	.page-btn {
+		min-width: 2rem;
+		height: 2rem;
+		border: 1px solid color-mix(in srgb, var(--color-text) 16%, transparent);
+		background: transparent;
+		padding: 0 0.5rem;
+		font-size: 0.75rem;
+		color: color-mix(in srgb, var(--color-text) 72%, transparent);
+		cursor: pointer;
+	}
+
+	.page-nav {
+		border-color: transparent;
+		min-width: 2.6rem;
+	}
+
+	.page-btn.is-active {
+		border-color: var(--color-accent-bright);
+		background: var(--color-accent-bright);
+		color: var(--color-on-accent);
+	}
+
+	.page-btn:hover:not(:disabled):not(.is-active) {
+		border-color: var(--color-accent-bright);
+		color: var(--color-text);
+	}
+
+	.page-btn:disabled {
+		opacity: 0.35;
+		cursor: default;
+	}
+
+	.page-btn:focus-visible,
+	.view-btn:focus-visible,
+	.project-tech-more:focus-visible,
+	.project-details:focus-visible,
+	.project-globe:focus-visible {
+		outline: 1px solid var(--color-accent-bright);
+		outline-offset: 2px;
+	}
+
+	.projects-stage .project-card[hidden] {
+		display: none;
+	}
+
+	#projects.is-enhanced:not(.is-in) .project-card {
+		opacity: 0;
+	}
+
+	@keyframes chart-ring-dash {
+		to {
+			stroke-dashoffset: -9.2;
+		}
+	}
+
+	@keyframes project-sheen {
+		to {
+			transform: translateX(130%);
+		}
+	}
+
+	@media (min-width: 768px) {
+		.projects-stage.is-grid,
+		.projects-stage.is-dense {
+			grid-template-columns: 1fr 1fr;
+		}
+
+		.projects-stage.is-grid .project-card.is-featured {
+			grid-column: 1 / -1;
+			grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+		}
+
+		.projects-stage.is-grid .project-card.is-featured .project-title {
+			font-size: 1.65rem;
+		}
+	}
+
+	@media (min-width: 1100px) {
+		.projects-stage.is-grid,
+		.projects-stage.is-dense {
+			grid-template-columns: 1fr 1fr 1fr;
+		}
+	}
+
+	@media (max-width: 767px) {
+		.projects-stage.is-list .project-card {
+			grid-template-columns: 1fr;
+		}
+
+		.projects-stage.is-list .project-visual {
+			height: 14rem;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.project-card,
+		.project-mark,
+		.project-details svg,
+		.project-visual,
+		.project-card::before {
+			transition: none;
+		}
+
+		.project-card:hover {
+			transform: none;
+		}
+
+		.project-card:hover .project-mark,
+		.project-card:hover .project-details svg {
+			transform: none;
+		}
+
+		.project-card:hover .project-visual::after,
+		.chart-node .chart-now {
+			animation: none;
+		}
+	}
+</style>
