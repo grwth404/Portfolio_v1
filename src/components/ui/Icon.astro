@@ -4,6 +4,8 @@ import { iconUrl } from "../../data/site";
 interface Props {
 	icon: string;
 	color?: string;
+	/** Keep the icon's own brand colors instead of tinting it. */
+	colored?: boolean;
 	size?: number;
 	class?: string;
 	alt?: string;
@@ -12,6 +14,7 @@ interface Props {
 const {
 	icon,
 	color = "8b3a2a",
+	colored = false,
 	size = 16,
 	class: className = "h-4 w-4 object-contain",
 	alt = "",
@@ -19,7 +22,7 @@ const {
 ---
 
 <img
-	src={iconUrl(icon, color)}
+	src={iconUrl(icon, colored ? "" : color)}
 	alt={alt}
 	width={size}
 	height={size}

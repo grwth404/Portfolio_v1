@@ -1,11 +1,87 @@
 ---
 import { careers } from "../data/career";
 import { sections } from "../data/sections";
-import { iconUrl } from "../data/site";
+import type { Career } from "../data/types";
 import SectionHeader from "./ui/SectionHeader.astro";
-import CornerBrackets from "./ui/CornerBrackets.astro";
 
 const { career: section } = sections;
+const now = new Date();
+
+function at(iso: string) {
+	const [year, month = "1"] = iso.split("-");
+	return new Date(Number(year), Number(month) - 1, 1);
+}
+
+function monthsBetween(start: Date, end: Date) {
+	return (
+		(end.getFullYear() - start.getFullYear()) * 12 +
+		(end.getMonth() - start.getMonth())
+	);
+}
+
+function duration(months: number) {
+	const years = Math.floor(months / 12);
+	const mos = months % 12;
+	const parts: string[] = [];
+	if (years) parts.push(`${years} ${years === 1 ? "yr" : "yrs"}`);
+	if (mos) parts.push(`${mos} ${mos === 1 ? "mo" : "mos"}`);
+	return parts.join(" ") || "0 mos";
+}
+
+function yearOf(iso: string) {
+	return iso.slice(0, 4);
+}
+
+function bounds(job: Career) {
+	const startIso = job.roles.reduce(
+		(min, role) => (role.start < min ? role.start : min),
+		job.roles[0].start,
+	);
+	const current = job.roles.some((role) => role.end === null);
+	const endIso = current
+		? null
+		: job.roles.reduce(
+				(max, role) => ((role.end ?? "") > max ? (role.end ?? max) : max),
+				job.roles[0].end ?? "",
+			);
+	return { startIso, endIso, current };
+}
+
+const jobs = careers.map((job) => {
+	const { startIso, endIso, current } = bounds(job);
+	const latest = [...job.roles].sort((a, b) => b.start.localeCompare(a.start))[0];
+	const months = Math.max(
+		monthsBetween(at(startIso), endIso ? at(endIso) : now),
+		0,
+	);
+	return {
+		...job,
+		id: job.company.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+		role: latest.title,
+		startIso,
+		endIso,
+		current,
+		months,
+		periodStart: yearOf(startIso),
+		periodEnd: current ? "NOW" : yearOf(endIso ?? startIso),
+		span: duration(months),
+		roles: [...job.roles]
+			.sort((a, b) => b.start.localeCompare(a.start))
+			.map((role) => ({
+				title: role.title,
+				range: `${yearOf(role.start)} — ${role.end ? yearOf(role.end) : "Present"}`,
+			})),
+	};
+});
+
+const chronological = [...jobs].sort((a, b) =>
+	a.startIso.localeCompare(b.startIso),
+);
+const rangeStart = yearOf(chronological[0]?.startIso ?? `${now.getFullYear()}`);
+const rangeEnd = String(now.getFullYear());
+const mapLabel = `Career map from ${rangeStart} to ${rangeEnd}: ${chronological
+	.map((job) => `${job.company}, ${job.periodStart} to ${job.periodEnd}`)
+	.join("; ")}`;
 ---
 
 <section id="career" class="mt-24">
@@ -17,98 +93,209 @@ const { career: section } = sections;
 	/>
 
 	<div
-		class="career-reveal mt-12 grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-5"
-		style="--d: 120ms"
+		class="career-reveal career-panel relative mt-12 overflow-visible border border-text/15 bg-bg"
+		style="--d: 90ms"
 	>
-		{
-			careers.map((job, index) => (
-				<div
-					class="career-flip group h-[360px] sm:h-[380px] [perspective:1000px]"
-					style={`--d: ${200 + index * 100}ms`}
-				>
-					<div class="relative h-full w-full transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] [transform-style:preserve-3d] group-hover:[transform:rotateY(180deg)] group-focus-within:[transform:rotateY(180deg)]">
-						<div class="absolute inset-0 [backface-visibility:hidden] rounded-xl border border-text/10 bg-text/2 p-6 flex flex-col">
-							<CornerBrackets />
+		<span
+			class="pointer-events-none absolute -top-px -left-px z-20 h-5 w-5 border-t-2 border-l-2 border-accent-bright"
+			aria-hidden="true"></span>
+		<span
+			class="pointer-events-none absolute -top-px -right-px z-20 h-5 w-5 border-t-2 border-r-2 border-accent-bright"
+			aria-hidden="true"></span>
+		<span
+			class="pointer-events-none absolute -bottom-px -left-px z-20 h-5 w-5 border-b-2 border-l-2 border-accent-bright"
+			aria-hidden="true"></span>
+		<span
+			class="pointer-events-none absolute -right-px -bottom-px z-20 h-5 w-5 border-b-2 border-r-2 border-accent-bright"
+			aria-hidden="true"></span>
 
-							<div class="flex items-start justify-between gap-3 mb-5">
-								<span class="text-[0.6rem] uppercase tracking-wider px-2 py-0.5 rounded border border-accent/30 bg-accent/10 text-accent">
-									{job.company}
-								</span>
-								<span class="text-[0.5rem] uppercase tracking-widest text-text/50 shrink-0">
-									flip →
-								</span>
-							</div>
+		<div class="relative border-b border-text/10 px-4 py-3 sm:px-5">
+			<div class="flex items-center justify-between gap-3">
+				<div class="flex items-center gap-2.5">
+					<span class="h-2 w-2 shrink-0 bg-accent-bright" aria-hidden="true"
+					></span>
+					<span class="font-mono text-sm tracking-tight text-text"
+						>career.log</span
+					>
+				</div>
+				<p class="text-right text-[0.7rem] tracking-[0.16em] text-text/70">
+					HEAD <span class="text-text/35">//</span>
+					<span class="text-accent-bright">NOW</span>
+				</p>
+			</div>
+		</div>
 
-							<h3 class="font-sans font-light text-lg tracking-tight text-text uppercase">
-								{job.role}
-							</h3>
-							<p class="mt-2 text-[0.55rem] uppercase tracking-wider text-text/60">
-								{job.period} · {job.location}
-							</p>
-
-							<p class="mt-5 flex-1 text-[0.65rem] text-text/70 uppercase tracking-wide leading-relaxed">
-								{job.summary}
-							</p>
-
-							<ul class="mt-4 space-y-2">
-								{job.highlights.map((item) => (
-									<li class="flex items-center gap-2 text-[0.55rem] uppercase tracking-wider text-text/65">
-										<span class="h-1 w-1 shrink-0 rounded-full bg-accent" />
-										{item}
-									</li>
-								))}
-							</ul>
-						</div>
-
-						<div class="absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)] rounded-xl border border-accent/25 bg-bg p-6 flex flex-col items-center text-center">
-							<CornerBrackets />
-
-							<div class="mt-4 flex h-20 w-full items-center justify-center rounded-lg border border-text/10 bg-text/4 px-6">
-								<img
-									src={iconUrl(job.logoIcon, "c8c4bc")}
-									alt={`${job.company} logo`}
-									width="120"
-									height="40"
-									class="max-h-10 w-auto object-contain opacity-90"
-									loading="lazy"
-								/>
-							</div>
-
-							<h3 class="mt-5 font-sans font-light text-base uppercase tracking-tight text-text">
-								{job.company}
-							</h3>
-
-							<p class="mt-4 flex-1 text-[0.65rem] text-text/70 uppercase tracking-wide leading-relaxed">
-								{job.intro}
-							</p>
-
-							<a
-								href={job.website}
-								target="_blank"
-								rel="noopener noreferrer"
-								class="mt-5 inline-flex items-center gap-2 text-[0.6rem] uppercase tracking-widest text-accent border border-accent/40 px-4 py-2.5 rounded-lg hover:bg-accent hover:text-on-accent transition-colors duration-300 cursor-pointer"
-							>
-								Visit Website
-								<svg
-									class="h-3 w-3"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="1.5"
-									aria-hidden="true"
+		<div class="px-4 py-5 sm:px-5">
+			<fieldset class="career-map-field">
+				<legend class="career-legend">Career map</legend>
+				<div class="career-map" role="group" aria-label={mapLabel}>
+					<div class="career-map-bar">
+						{
+							chronological.map((job) => (
+								<button
+									type="button"
+									class:list={["career-seg", job.current && "is-now"]}
+									style={`--span:${job.months}`}
+									data-company={job.id}
+									aria-label={`${job.company}, ${job.periodStart} — ${job.periodEnd}, ${job.span}`}
 								>
-									<path
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										d="M13.5 6H18m0 0v4.5M18 6l-8.25 8.25M6 18v-3.75a2.25 2.25 0 0 1 2.25-2.25H12"
-									/>
-								</svg>
-							</a>
-						</div>
+									<span>{job.company}</span>
+									{job.current && (
+										<i class="career-seg-mark" aria-hidden="true" />
+									)}
+								</button>
+							))
+						}
+					</div>
+					<div class="career-map-years">
+						<span>{rangeStart}</span>
+						<span>{rangeEnd}</span>
 					</div>
 				</div>
-			))
-		}
+			</fieldset>
+
+			<ol class="career-list">
+				{
+					jobs.map((job) => (
+						<li class="career-entry">
+							<div class="career-meta">
+								<p class="career-period">
+									<span
+										class:list={[
+											"career-node-inline",
+											job.current && "is-now",
+										]}
+										aria-hidden="true"
+									/>
+									{job.periodStart}
+									<span class="career-dash"> — </span>
+									{job.current ? (
+										<span class="career-now">NOW</span>
+									) : (
+										job.periodEnd
+									)}
+								</p>
+								<p class="career-span">{job.span}</p>
+							</div>
+
+							<div class="career-axis" aria-hidden="true">
+								<span class:list={["career-node", job.current && "is-now"]} />
+							</div>
+
+							<article
+								id={`career-${job.id}`}
+								class="career-card is-open"
+								data-company={job.id}
+							>
+								<div class="career-photo-wrap">
+									<img
+										class="career-photo"
+										src={job.photo}
+										alt={`${job.company} headquarters`}
+										width="1600"
+										height="900"
+										loading="lazy"
+										decoding="async"
+									/>
+									<span class="career-photo-fallback" aria-hidden="true">
+										{job.initials}
+									</span>
+									<p class="career-loc">
+										<i aria-hidden="true" />
+										HQ · {job.location}
+									</p>
+								</div>
+
+								<div class="career-id">
+									<span class="career-mark" aria-hidden="true">
+										{job.initials}
+									</span>
+									<div class="min-w-0 flex-1">
+										<h3 class="career-role">{job.role}</h3>
+										<a
+											class="career-company"
+											href={job.website}
+											target="_blank"
+											rel="noopener noreferrer"
+										>
+											@ {job.company}
+										</a>
+									</div>
+									<button
+										type="button"
+										class="career-toggle"
+										aria-expanded="true"
+										aria-controls={`career-detail-${job.id}`}
+										aria-label={`Collapse ${job.company}`}
+									>
+										<svg
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="1.75"
+											aria-hidden="true"
+										>
+											<path
+												d="M6 14.5 12 8.5l6 6"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+											/>
+										</svg>
+									</button>
+								</div>
+
+								<div class="career-detail" id={`career-detail-${job.id}`}>
+									<div class="career-detail-pad">
+										<div class="career-tags">
+											<span class="career-tag is-solid">{job.employment}</span>
+											<span class="career-tag">
+												<i aria-hidden="true" />
+												{job.arrangement}
+											</span>
+										</div>
+										<p class="career-summary">{job.summary}</p>
+
+										<div class="career-block">
+											<p class="career-kicker">Roles</p>
+											<ul>
+												{job.roles.map((role) => (
+													<li class="career-row">
+														<span class="career-bullet" aria-hidden="true" />
+														<span>{role.title}</span>
+														<time>{role.range}</time>
+													</li>
+												))}
+											</ul>
+										</div>
+
+										<div class="career-block">
+											<p class="career-kicker">Highlights</p>
+											<ul>
+												{job.highlights.map((item) => (
+													<li class="career-row">
+														<span class="career-bullet" aria-hidden="true" />
+														<span>{item}</span>
+													</li>
+												))}
+											</ul>
+										</div>
+									</div>
+
+									<div class="career-stack">
+										<p class="career-kicker">Stack</p>
+										<div class="career-chips">
+											{job.stack.map((tech) => (
+												<span class="career-chip">{tech}</span>
+											))}
+										</div>
+									</div>
+								</div>
+							</article>
+						</li>
+					))
+				}
+			</ol>
+		</div>
 	</div>
 </section>
 
@@ -117,32 +304,650 @@ const { career: section } = sections;
 	import { observeSectionReveal } from "../lib/reveal";
 
 	function initCareer() {
-		observeSectionReveal("career", ".career-reveal", {
-			threshold: 0.15,
-			onReveal: () => {
-				document
-					.querySelectorAll<HTMLElement>("#career .career-flip")
-					.forEach((card) => {
-						const delay = parseInt(
-							card.style.getPropertyValue("--d") || "0",
-							10,
-						);
-						card.animate(
-							[
-								{ opacity: 0, transform: "translateY(28px) scale(0.96)" },
-								{ opacity: 1, transform: "translateY(0) scale(1)" },
-							],
-							{
-								duration: 650,
-								delay,
-								easing: "cubic-bezier(0.22, 1, 0.36, 1)",
-								fill: "both",
-							},
-						);
-					});
+		const section = document.getElementById("career");
+		if (!(section instanceof HTMLElement)) return;
+
+		observeSectionReveal("career", ".career-reveal", { threshold: 0.12 });
+
+		const reduce = window.matchMedia(
+			"(prefers-reduced-motion: reduce)",
+		).matches;
+
+		section.addEventListener(
+			"error",
+			(event) => {
+				const target = event.target;
+				if (!(target instanceof HTMLImageElement)) return;
+				if (!target.classList.contains("career-photo")) return;
+				target.closest(".career-photo-wrap")?.classList.add("is-empty");
+				target.remove();
 			},
+			true,
+		);
+
+		section.addEventListener("click", (event) => {
+			const target = event.target;
+			if (!(target instanceof Element)) return;
+
+			const toggle = target.closest<HTMLButtonElement>(".career-toggle");
+			if (toggle) {
+				const card = toggle.closest<HTMLElement>(".career-card");
+				if (!card) return;
+				const open = card.classList.toggle("is-open");
+				const company = card.dataset.company ?? "role";
+				toggle.setAttribute("aria-expanded", open ? "true" : "false");
+				toggle.setAttribute(
+					"aria-label",
+					`${open ? "Collapse" : "Expand"} ${company}`,
+				);
+				return;
+			}
+
+			const seg = target.closest<HTMLButtonElement>(".career-seg");
+			if (!seg?.dataset.company) return;
+			const card = section.querySelector<HTMLElement>(
+				`.career-card[data-company="${CSS.escape(seg.dataset.company)}"]`,
+			);
+			if (!card) return;
+			card.scrollIntoView({
+				behavior: reduce ? "auto" : "smooth",
+				block: "nearest",
+			});
+		});
+
+		const map = section.querySelector(".career-map");
+		map?.addEventListener("pointerover", (event) => {
+			const target = event.target;
+			if (!(target instanceof Element)) return;
+			const seg = target.closest<HTMLElement>(".career-seg");
+			section
+				.querySelectorAll(".career-card.is-linked")
+				.forEach((card) => card.classList.remove("is-linked"));
+			if (!seg?.dataset.company) return;
+			section
+				.querySelector(
+					`.career-card[data-company="${CSS.escape(seg.dataset.company)}"]`,
+				)
+				?.classList.add("is-linked");
+		});
+		map?.addEventListener("pointerout", (event) => {
+			const next = event.relatedTarget;
+			if (next instanceof Node && map.contains(next)) return;
+			section
+				.querySelectorAll(".career-card.is-linked")
+				.forEach((card) => card.classList.remove("is-linked"));
 		});
 	}
 
 	onDomReady(initCareer);
 </script>
+
+<style>
+	.career-panel,
+	.career-card,
+	.career-map-field,
+	.career-seg,
+	.career-tag,
+	.career-chip,
+	.career-mark,
+	.career-loc,
+	.career-photo-wrap,
+	.career-node,
+	.career-node-inline {
+		border-radius: 0;
+	}
+
+	.career-map-field {
+		margin: 0;
+		min-inline-size: 0;
+		border: 1px solid color-mix(in srgb, var(--color-text) 22%, transparent);
+		padding: 0.95rem 0.85rem 0.8rem;
+	}
+
+	.career-legend,
+	.career-kicker {
+		color: var(--color-accent-bright);
+		font-size: 0.62rem;
+		font-weight: 500;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+	}
+
+	.career-legend {
+		margin-left: 0.55rem;
+		padding: 0 0.45rem;
+		background: var(--color-bg);
+		color: color-mix(in srgb, var(--color-text) 70%, transparent);
+		font-weight: 400;
+		letter-spacing: 0.18em;
+	}
+
+	.career-map-bar {
+		display: flex;
+		gap: 2px;
+		height: 2.45rem;
+	}
+
+	.career-seg {
+		position: relative;
+		display: flex;
+		align-items: center;
+		flex: var(--span) 1 0;
+		min-width: 0;
+		margin: 0;
+		border: 0;
+		background: var(--color-accent);
+		padding: 0 0.7rem;
+		font-family: inherit;
+		font-size: 0.78rem;
+		font-weight: 500;
+		letter-spacing: -0.01em;
+		color: var(--color-on-accent);
+		text-align: left;
+		cursor: pointer;
+		appearance: none;
+	}
+
+	.career-seg.is-now {
+		background: var(--color-accent-bright);
+		padding-right: 1.4rem;
+	}
+
+	.career-seg span {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.career-seg:hover,
+	.career-seg:focus-visible {
+		filter: brightness(1.12);
+	}
+
+	.career-seg-mark {
+		position: absolute;
+		top: 50%;
+		right: 0.5rem;
+		width: 0.42rem;
+		height: 0.42rem;
+		transform: translateY(-50%);
+		background: var(--color-on-accent);
+	}
+
+	.career-map-years {
+		display: flex;
+		justify-content: space-between;
+		margin-top: 0.45rem;
+		font-size: 0.68rem;
+		font-variant-numeric: tabular-nums;
+		color: color-mix(in srgb, var(--color-text) 55%, transparent);
+	}
+
+	.career-list {
+		display: flex;
+		flex-direction: column;
+		gap: 1.35rem;
+		margin: 1.6rem 0 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	.career-entry {
+		display: grid;
+		grid-template-columns: 8.4rem 1.15rem minmax(0, 1fr);
+		column-gap: 0.7rem;
+		align-items: start;
+	}
+
+	.career-meta {
+		padding-top: 0.2rem;
+		text-align: right;
+	}
+
+	.career-period {
+		font-size: 0.92rem;
+		font-weight: 500;
+		letter-spacing: -0.03em;
+		line-height: 1.2;
+		color: var(--color-text);
+	}
+
+	.career-dash,
+	.career-span {
+		color: color-mix(in srgb, var(--color-text) 48%, transparent);
+	}
+
+	.career-now {
+		color: var(--color-accent-bright);
+	}
+
+	.career-span {
+		margin-top: 0.28rem;
+		font-size: 0.72rem;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.career-node-inline {
+		display: none;
+	}
+
+	.career-axis {
+		position: relative;
+		height: 100%;
+		min-height: 1.25rem;
+	}
+
+	.career-axis::before {
+		content: "";
+		position: absolute;
+		top: 0;
+		bottom: -1.35rem;
+		left: 50%;
+		width: 1px;
+		transform: translateX(-50%);
+		background: color-mix(in srgb, var(--color-accent-bright) 65%, transparent);
+	}
+
+	.career-entry:first-child .career-axis::before {
+		top: 0.6rem;
+	}
+
+	.career-entry:last-child .career-axis::before {
+		top: 0.6rem;
+		bottom: auto;
+		height: 0;
+	}
+
+	.career-node {
+		position: absolute;
+		top: 0.28rem;
+		left: 50%;
+		z-index: 1;
+		width: 0.62rem;
+		height: 0.62rem;
+		transform: translateX(-50%);
+		border: 1.5px solid var(--color-accent-bright);
+		background: var(--color-bg);
+	}
+
+	.career-node.is-now {
+		background: var(--color-accent-bright);
+	}
+
+	.career-card {
+		position: relative;
+		min-width: 0;
+		scroll-margin-top: 6rem;
+		border: 1px solid color-mix(in srgb, var(--color-text) 14%, transparent);
+		background: var(--color-bg);
+		transition:
+			border-color 0.35s ease,
+			box-shadow 0.35s ease;
+	}
+
+	.career-card::before {
+		content: "";
+		position: absolute;
+		top: 0;
+		left: 0;
+		z-index: 4;
+		width: 0;
+		height: 2px;
+		background: var(--color-accent-bright);
+		pointer-events: none;
+		transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	.career-card:hover,
+	.career-card.is-linked {
+		border-color: var(--color-accent-bright);
+		box-shadow: 0 14px 32px rgb(193 80 47 / 0.18);
+	}
+
+	.career-card:hover::before,
+	.career-card.is-linked::before {
+		width: 100%;
+	}
+
+	.career-photo-wrap {
+		position: relative;
+		display: grid;
+		height: 12.75rem;
+		place-items: center;
+		overflow: hidden;
+		background-color: color-mix(in srgb, var(--color-text) 4%, var(--color-bg));
+		background-image:
+			linear-gradient(
+				to right,
+				color-mix(in srgb, var(--color-text) 12%, transparent) 1px,
+				transparent 1px
+			),
+			linear-gradient(
+				to bottom,
+				color-mix(in srgb, var(--color-text) 12%, transparent) 1px,
+				transparent 1px
+			);
+		background-size: 24px 24px;
+		background-position: center;
+	}
+
+	.career-photo {
+		position: absolute;
+		inset: 0;
+		z-index: 1;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		object-position: center 42%;
+	}
+
+	.career-photo-wrap::after {
+		content: "";
+		position: absolute;
+		right: 0;
+		bottom: 0;
+		left: 0;
+		z-index: 1;
+		height: 4.5rem;
+		background: linear-gradient(to top, var(--color-bg), transparent);
+		pointer-events: none;
+	}
+
+	.career-photo-wrap::before {
+		content: "";
+		position: absolute;
+		inset: 0;
+		z-index: 2;
+		background: linear-gradient(
+			115deg,
+			transparent 32%,
+			rgb(255 255 255 / 0.16) 50%,
+			transparent 68%
+		);
+		transform: translateX(-130%);
+		pointer-events: none;
+	}
+
+	.career-card:hover .career-photo-wrap::before {
+		animation: career-sheen 0.8s ease;
+	}
+
+	.career-photo-fallback {
+		display: none;
+		position: relative;
+		z-index: 1;
+		font-size: 4rem;
+		font-weight: 500;
+		line-height: 1;
+		letter-spacing: 0.12em;
+		color: color-mix(
+			in srgb,
+			var(--color-accent-bright) 76%,
+			var(--color-text)
+		);
+	}
+
+	.career-photo-wrap.is-empty .career-photo-fallback {
+		display: block;
+	}
+
+	.career-loc {
+		position: absolute;
+		top: 0.75rem;
+		left: 0.75rem;
+		z-index: 3;
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		margin: 0;
+		border: 1px solid color-mix(in srgb, var(--color-text) 22%, transparent);
+		background: color-mix(in srgb, var(--color-bg) 88%, transparent);
+		padding: 0.22rem 0.5rem 0.22rem 0.42rem;
+		font-size: 0.68rem;
+		letter-spacing: 0.04em;
+		color: var(--color-text);
+	}
+
+	.career-loc i {
+		width: 0.38rem;
+		height: 0.38rem;
+		background: var(--color-accent-bright);
+	}
+
+	.career-id {
+		position: relative;
+		z-index: 3;
+		display: flex;
+		align-items: center;
+		gap: 0.85rem;
+		padding: 0 1.05rem 0.15rem;
+	}
+
+	.career-mark {
+		display: grid;
+		width: 3.35rem;
+		height: 3.35rem;
+		margin-top: -1.65rem;
+		flex-shrink: 0;
+		place-items: center;
+		background: var(--color-text);
+		font-size: 0.92rem;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		color: var(--color-bg);
+	}
+
+	.career-role {
+		font-size: 1.15rem;
+		font-weight: 500;
+		line-height: 1.2;
+		letter-spacing: -0.03em;
+		color: var(--color-text);
+	}
+
+	.career-company {
+		display: inline-block;
+		margin-top: 0.18rem;
+		font-size: 0.84rem;
+		color: var(--color-accent-bright);
+	}
+
+	.career-company:hover {
+		text-decoration: underline;
+		text-underline-offset: 0.18em;
+	}
+
+	.career-toggle {
+		display: grid;
+		width: 2rem;
+		height: 2rem;
+		flex-shrink: 0;
+		place-items: center;
+		border: 0;
+		background: transparent;
+		color: color-mix(in srgb, var(--color-text) 55%, transparent);
+		cursor: pointer;
+	}
+
+	.career-toggle svg {
+		width: 1.05rem;
+		height: 1.05rem;
+		transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+	}
+
+	.career-card:not(.is-open) .career-toggle svg {
+		transform: rotate(180deg);
+	}
+
+	.career-toggle:hover {
+		color: var(--color-text);
+	}
+
+	.career-card:not(.is-open) .career-detail {
+		display: none;
+	}
+
+	.career-detail-pad {
+		padding: 0.55rem 1.15rem 0.15rem;
+	}
+
+	.career-tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+	}
+
+	.career-tag {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.38rem;
+		border: 1px solid color-mix(in srgb, var(--color-text) 18%, transparent);
+		padding: 0.16rem 0.5rem;
+		font-size: 0.72rem;
+		line-height: 1.35;
+		color: color-mix(in srgb, var(--color-text) 78%, transparent);
+	}
+
+	.career-tag.is-solid {
+		border-color: var(--color-accent-bright);
+		background: var(--color-accent-bright);
+		color: var(--color-on-accent);
+	}
+
+	.career-tag i {
+		width: 0.42rem;
+		height: 0.42rem;
+		border: 1px solid currentColor;
+	}
+
+	.career-summary {
+		margin-top: 0.9rem;
+		font-size: 0.86rem;
+		line-height: 1.55;
+		color: color-mix(in srgb, var(--color-text) 72%, transparent);
+	}
+
+	.career-block {
+		margin-top: 1rem;
+		border-top: 1px solid color-mix(in srgb, var(--color-text) 10%, transparent);
+		padding-top: 0.85rem;
+	}
+
+	.career-row {
+		display: flex;
+		align-items: baseline;
+		gap: 0.5rem;
+		margin-top: 0.42rem;
+		font-size: 0.84rem;
+		line-height: 1.4;
+		color: var(--color-text);
+	}
+
+	.career-bullet {
+		width: 0.38rem;
+		height: 0.38rem;
+		flex-shrink: 0;
+		transform: translateY(-0.05rem);
+		background: var(--color-accent-bright);
+	}
+
+	.career-row time {
+		margin-left: auto;
+		flex-shrink: 0;
+		padding-left: 1rem;
+		font-size: 0.75rem;
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+		color: color-mix(in srgb, var(--color-text) 50%, transparent);
+	}
+
+	.career-stack {
+		margin-top: 1rem;
+		border-top: 1px solid color-mix(in srgb, var(--color-text) 14%, transparent);
+		padding: 0.85rem 1.15rem 1.05rem;
+	}
+
+	.career-chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+		margin-top: 0.6rem;
+	}
+
+	.career-chip {
+		border: 1px solid color-mix(in srgb, var(--color-text) 16%, transparent);
+		padding: 0.16rem 0.48rem;
+		font-size: 0.72rem;
+		line-height: 1.35;
+		color: color-mix(in srgb, var(--color-text) 78%, transparent);
+	}
+
+	.career-toggle:focus-visible,
+	.career-seg:focus-visible,
+	.career-company:focus-visible {
+		outline: 1px solid var(--color-accent-bright);
+		outline-offset: 2px;
+	}
+
+	@keyframes career-sheen {
+		to {
+			transform: translateX(130%);
+		}
+	}
+
+	@media (min-width: 640px) {
+		.career-photo-wrap {
+			height: 16.5rem;
+		}
+	}
+
+	@media (max-width: 760px) {
+		.career-entry {
+			grid-template-columns: minmax(0, 1fr);
+			row-gap: 0.7rem;
+		}
+
+		.career-axis {
+			display: none;
+		}
+
+		.career-meta {
+			display: flex;
+			align-items: baseline;
+			justify-content: space-between;
+			gap: 1rem;
+			padding-top: 0;
+			text-align: left;
+		}
+
+		.career-span {
+			margin-top: 0;
+		}
+
+		.career-node-inline {
+			display: inline-block;
+			width: 0.45rem;
+			height: 0.45rem;
+			margin-right: 0.4rem;
+			border: 1.5px solid var(--color-accent-bright);
+			background: transparent;
+			vertical-align: 0.05em;
+		}
+
+		.career-node-inline.is-now {
+			background: var(--color-accent-bright);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.career-card,
+		.career-card::before,
+		.career-toggle svg {
+			transition: none;
+		}
+
+		.career-card:hover .career-photo-wrap::before {
+			animation: none;
+		}
+	}
+</style>

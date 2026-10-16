@@ -2,6 +2,7 @@
 import { skillCategories, skills } from "../data/skills";
 import { sections } from "../data/sections";
 import SectionHeader from "./ui/SectionHeader.astro";
+import Icon from "./ui/Icon.astro";
 
 const { skills: section } = sections;
 const rangeStart = 2017;
@@ -30,6 +31,13 @@ function bar(since: number) {
 function yearsLabel(years: number) {
 	return `${years} ${years === 1 ? "yr" : "yrs"}`;
 }
+
+const iconTint = new Map([
+	["simple-icons:perplexity", "20808d"],
+	["logos:openai-icon", "f4f4f5"],
+	["simple-icons:modelcontextprotocol", "f4f4f5"],
+	["simple-icons:owasp", "f4f4f5"],
+]);
 
 const axisYears = Array.from(
 	{ length: rangeEnd - rangeStart },
@@ -163,10 +171,20 @@ function axisColor(year: number) {
 								data-label={label.toLowerCase()}
 							>
 								<span
-									class="skill-abbr grid h-12 w-12 shrink-0 place-items-center bg-text text-[0.8rem] font-semibold tracking-wide text-bg"
+									class="skill-mark grid h-12 w-12 shrink-0 place-items-center overflow-hidden"
 									aria-hidden="true"
 								>
-									{skill.abbr}
+									<Icon
+										icon={skill.icon}
+										colored={!iconTint.has(skill.icon)}
+										color={iconTint.get(skill.icon) ?? "f4f4f5"}
+										size={48}
+										class:list={[
+											skill.icon.startsWith("skill-icons:")
+												? "h-12 w-12 object-cover"
+												: "h-9 w-9 object-contain",
+										]}
+									/>
 								</span>
 								<div class="min-w-0 flex-1 pt-0.5">
 									<div class="flex items-start justify-between gap-2">
@@ -378,7 +396,7 @@ function axisColor(year: number) {
 			box-shadow 0.35s ease;
 	}
 
-	.skill-card .skill-abbr,
+	.skill-card .skill-mark,
 	.skill-fill {
 		transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 	}
@@ -407,7 +425,12 @@ function axisColor(year: number) {
 		box-shadow: 0 14px 32px rgb(193 80 47 / 0.18);
 	}
 
-	.skill-card:hover .skill-abbr {
+	.skill-mark {
+		border-radius: 0;
+		background: #242938;
+	}
+
+	.skill-card:hover .skill-mark {
 		transform: scale(1.08);
 	}
 
@@ -427,7 +450,7 @@ function axisColor(year: number) {
 
 	@media (prefers-reduced-motion: reduce) {
 		.skill-card,
-		.skill-card .skill-abbr,
+		.skill-card .skill-mark,
 		.skill-fill {
 			transition: none;
 		}
