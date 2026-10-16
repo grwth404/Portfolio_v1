@@ -55,6 +55,26 @@ const showingEnd = firstPage.length;
 			class="pointer-events-none absolute -right-px -bottom-px z-20 h-5 w-5 border-b-2 border-r-2 border-accent-bright"
 			aria-hidden="true"></span>
 
+		<div class="relative border-b border-text/10 px-4 py-3 sm:px-5">
+			<div class="flex items-center justify-between gap-3">
+				<div class="flex items-center gap-2.5">
+					<span class="h-2 w-2 shrink-0 bg-accent-bright" aria-hidden="true"
+					></span>
+					<span class="font-mono text-sm tracking-tight text-text"
+						>projects.db</span
+					>
+				</div>
+
+				<p
+					id="skills-count"
+					class="text-right text-[0.7rem] tabular-nums tracking-wide text-text/70"
+					aria-live="polite"
+				>
+					{projects.length} / {projects.length} shown
+				</p>
+			</div>
+		</div>
+
 		<div class="px-4 pt-5 pb-4 sm:px-5">
 			<fieldset class="project-field projects-chart">
 				<legend class="project-legend">Projects by year</legend>
@@ -1076,7 +1096,7 @@ const showingEnd = firstPage.length;
 		padding: 0 0.45rem;
 		margin-left: 0.55rem;
 		background: var(--color-bg);
-		color: var(--color-accent-bright);
+		color: color-mix(in srgb, var(--color-text) 70%, transparent);
 		font-size: 0.62rem;
 		font-weight: 400;
 		letter-spacing: 0.18em;
